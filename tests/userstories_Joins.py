@@ -3,6 +3,8 @@ import unittest
 from . import magic
 
 class Testing(unittest.TestCase):
+    
+    ### CASES WHERE OUR MAGIC ACTUALLY DOES SOMETHING
     def test_simple(self):
         ''' 
         Explanation: 
@@ -33,7 +35,7 @@ class Testing(unittest.TestCase):
                                           LEFT join
                                           (SELECT *, row_number() over (order by pk)
                                           FROM table2)A
-                                  """)
+                                  """, con)
                 '''
         
         self.assertEqual(magic(input), expected_output)
@@ -70,14 +72,14 @@ class Testing(unittest.TestCase):
                                           LEFT join
                                           (SELECT *, row_number() over (order by pk)
                                           FROM table2)A
-                                  """)
+                                  """, con)
                 ...
                 
                 '''
         
         self.assertEqual(magic(input), expected_output)
 
-        
+    ### CASES WHERE WE CANNOT OPTIMIZE ANYTHING
     def test_Different_Connections(self):
         ''' 
         Explanation: 
