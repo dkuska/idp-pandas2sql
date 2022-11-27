@@ -5,14 +5,19 @@ from cst_Visitor import Visitor
 from cst_Transformer import Transformer
 
 src = """
+import numpy
 import pandas as pd
 from pandas import read_sql
 
 df1 = pd.read_sql("SELECT * FROM table1")
 df2 = pd.read_sql("SELECT * FROM table2")
 df3 = df1.join(df2, how='inner')
-"""
 
+df3 = df1.set_index('key').join(df2.set_index('key'))
+
+s,t = 'abc', 'def'
+
+"""
 def main():
     src_tree = cst.parse_module(src)
     print(dump(src_tree))
