@@ -10,7 +10,6 @@ create-env: 			## Create environment and install pre-commits
 	@echo "Installing pre-commit hooks"
 	@$(VENV)pip3 install pre-commit black isort flake8 pyproject-flake8 pytest
 	@$(VENV)pre-commit install-hooks
-	@$(VENV)pre-commit install
 
 .PHONY: install-requirements
 install-requirements:		## Install and update requirements
