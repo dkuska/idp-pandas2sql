@@ -1,9 +1,7 @@
 from ast import *
-import astor
-
 
 from ast_nodetransformer import *
-from ast_nodevisitor import * 
+from ast_nodevisitor import *
 
 sample = """
 import numpy
@@ -14,10 +12,11 @@ df2 = pd.read_sql("SELECT * FROM table2")
 df3 = df1.join(df2, how='inner')
 """
 
+
 def main():
-    tree = parse(sample, mode='exec')
+    tree = parse(sample, mode="exec")
     print(dump(tree, indent=2))
-            
+
     analyzer = Analyzer()
     analyzer.visit(tree)
     analyzer.report()

@@ -7,7 +7,7 @@ There are a number of different approaches when systematically analyzing python 
     - Lexical scanning
     - Lowest level possible --> Too finely grained for our purposes
 2. AST
-    - Abstract syntax tree 
+    - Abstract syntax tree
     - Available through `ast` mode [Link](https://docs.python.org/3/library/ast.html#)
     - Generates Tree structure with nodes representing actually executable code
     - Removed Whitespaces/Empty Lines/Comments from Tree --> Parsing a src file into an AST and back to code, all this will be lost --> Bad User experience

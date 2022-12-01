@@ -1,5 +1,5 @@
 
-# Protokoll 24.11  
+# Protokoll 24.11
 
     - Acceptance Tests schreiben fuer minimale Examples -> I. zeigen, was wir umsetzen wollen
     - Input-Seite: pandas, modin, etc.
@@ -15,9 +15,9 @@
 
     - Grundlegende Pipeline:
         src -> AST/CST -> IR -> AST/CST -> output
-        
+
         Optimierung passiert innerhalb der IR
-        
+
         Idee: Pandas2Pandas, maybe to optimize
 
     - 2 Ansaetze:
