@@ -1,0 +1,40 @@
+repos:
+  - repo: https://github.com/ambv/black
+    rev: 22.10.0
+    hooks:
+      - id: black
+
+  - repo: https://github.com/hadialqattan/pycln
+    rev: v2.1.2
+    hooks:
+      - id: pycln
+        args: [--config=pyproject.toml]
+
+  - repo: https://github.com/csachs/pyproject-flake8
+    rev: v6.0.0
+    hooks:
+      - id: pyproject-flake8
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+      - id: check-yaml
+      - id: check-ast
+      - id: check-toml
+      - id: name-tests-test
+        exclude: helper
+      - id: no-commit-to-branch
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.2.3
+    hooks:
+      - id: pyupgrade
+        args: [--py39-plus]
