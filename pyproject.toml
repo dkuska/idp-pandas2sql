@@ -4,19 +4,20 @@ target-version = ["py39"]
 include = '\.pyi?$'
 exclude = '''
 /(
-    | \.git
-    | \.vscode
     | \__pycache__
+    | env
 )/
 '''
 
 [tool.isort]
 profile = "black"
+skip = "env"
 py_version = 39
 
 [tool.flake8]
-exclude = ".git,__pycache__"
+exclude = "__pycache__,env"
 select = "C,E,F,W,B,B950"
+max-line-length = 120
 ignore = "E501, W503"
 extend-ignore = "E203"
 # see https://lintlyci.github.io/Flake8Rules/
