@@ -2,78 +2,55 @@ import typing
 
 import libcst as cst
 
+from utils.pd_df_operations import DF_OPERATIONS, PD_AGGREGATIONS, PD_ALIASES, PD_JOINS
+from utils.assignment import Assignment
+from utils.imports import Import, ImportFrom
 
 class Visitor(cst.CSTVisitor):
     def __init__(self) -> None:
         self.pandas_imported = False
         self.pandas_alias = None
 
-        self.imports = {}  # Object used to keep track of imports in file
-        self.imports_from = {}
-        self.import_counter = 0
+        self.imports = []  # Object used to keep track of imports in file
+        self.imports_from = []
 
-        self.assignments = {}  # Object used to keep track of assignments
-        self.assign_counter = 0
+        self.assignments = []  # Object used to keep track of assignments
 
-        self.dfs = {}  # Object used to keep track of DataFrames
+        self.dfs = []  # Object used to keep track of DataFrames
+        self.sql_dfs = []
 
         super().__init__()
 
-    def visit_Import(self, node: cst.Import):
-        print("Import:")
+
+    def visit_Import(self, node: cst.Import) -> None:
         for name in node.names:
             if isinstance(name, cst.ImportAlias):
                 import_name = name.name.value
-                print(f"name: {import_name}")
-
-                alias_name = None
+                alias_name = ""
                 if name.asname:
                     alias_name = name.asname.name.value
-                    print(f"asname:{alias_name}")
-                    self.imports[import_name] = alias_name
-                else:
-                    self.imports[import_name] = import_name
+                    
+                self.imports.append(Import(lib_name = import_name, alias = alias_name))
 
-                ### PANDAS CHECK
-                if import_name == "pandas":
-                    self.pandas_imported = True
-                    self.pandas_alias = import_name
-                    if alias_name != None:
-                        self.pandas_alias = alias_name
-            self.import_counter += 1
-        print()
 
-    def visit_ImportFrom(self, node: cst.ImportFrom):
-        print("ImportFrom:")
-
+    def visit_ImportFrom(self, node: cst.ImportFrom) -> None:
         module = node.module
         if isinstance(module, cst.Name):
             module_name = module.value
-            if module_name not in self.imports_from:
-                self.imports_from[module_name] = []
-
-            if module_name == "pandas":
-                self.pandas_imported = True
-
-            print(f"module_name: {module_name}")
+            imports = []
             if isinstance(node.names, typing.Sequence):
                 for name in node.names:
                     if isinstance(name, cst.ImportAlias):
-                        print(f"name: {name.name.value}")
-                        self.imports_from[module_name].append(name.name.value)
+                        imports.append(name.name.value)
             elif isinstance(node.names, cst.ImportStar):
-                print(f"name: STAR(*)")
-                self.imports_from[module_name].append("*")
-            pass
+                imports.append('*')
+
+            self.imports_from.append(ImportFrom(lib_name=module_name, imports=imports))
         elif isinstance(module, cst.Attribute):
-            # TODO: Do something in this case
             pass
         else:
-            # module is None
             pass
 
-        self.import_counter += 1
-        print()
 
     def visit_Assign(self, node: cst.Assign):
         targets = []
@@ -93,75 +70,115 @@ class Visitor(cst.CSTVisitor):
         ## Parse values
         node_value = node.value
         if isinstance(node_value, cst.Call):
-            values.append(analyze_Call(node_value))
+            values.append(self.recursive_analyze_Call(node_value))
+            print(self.recursive_analyze_Call(node_value))
         elif isinstance(node_value, cst.SimpleString):
             values.append(node_value.value)
+            print(node_value.value)
         if isinstance(node_value, cst.Tuple):
             for element in node_value.elements:
                 ## TODO: Parse element.value if this is somethin complicated....
-
                 if isinstance(element.value, cst.SimpleString):
                     values.append(element.value.value)
+                    print(element.value.value)
+                    
 
-        # DEBUG
-        print("Assign:")
-        print(f'{", ".join(targets)} = {", ".join(values)}')
-        print()
+        if len(targets) == len(values):
+            for target, value in zip(targets, values):
+                pass
+        elif len(targets) > len(values):
+            # Values returns multiple args
+            pass
 
-        # TODO: Persist targets and values somehow..
-        self.assign_counter += len(targets)
 
-    def report(self):
+    def analyze_assignments(self):
+        # First analyze all assignments
+        for assignment in self.assignments:
+            for df_operation in DF_OPERATIONS:
+                if df_operation in assignment:
+                    pass
+                    # self.dfs[var_name] = value
+        # Then analyze all DFs
+        for df in self.dfs:
+            pass
+
+    
+    def analyze_imports(self):
+        for imp in self.imports:       
+            ### PANDAS CHECK
+            if imp.lib_name in PD_ALIASES or imp.alias in PD_ALIASES:
+                self.pandas_imported = True
+                self.pandas_alias = imp.alias
+                if imp.alias == '':
+                    self.pandas_alias = imp.lib_names
+        for imp in self.imports_from:
+            if imp.lib_name in PD_ALIASES:
+                self.pandas_imported = True
+                self.pandas_alias = imp.lib_name
+    
+    
+    def recursive_analyze_Call(self, call: cst.Call):
+        func = call.func
+        lib, attribute = "", ""
+        if isinstance(func, cst.Attribute):  # TODO: Figure out what other flows can be returned by call
+            func_value = func.value
+            # Func Value is simple name
+            if isinstance(func_value, cst.Name):
+                lib = func_value.value
+            elif isinstance(func_value, cst.Call):
+                lib = self.recursive_analyze_Call(func_value)  # Recursive call
+
+            func_attr = func.attr
+            if isinstance(func_attr, cst.Name):
+                attribute = func_attr.value
+
+        args = call.args
+        parts_n = []
+        for arg in args:
+            keyword, argument = "", ""
+            arg_value = arg.value
+            if arg.keyword:
+                arg_keyword = arg.keyword
+                if isinstance(arg_keyword, cst.Name) or isinstance(arg_keyword, cst.SimpleString):
+                    keyword = arg.keyword.value
+                elif isinstance(arg_keyword, cst.Call):
+                    keyword = self.recursive_analyze_Call(arg_keyword)
+
+            if isinstance(arg_value, cst.Arg) or isinstance(arg_value, cst.SimpleString):
+                argument = arg_value.value
+            elif isinstance(arg_value, cst.Call):
+                argument = self.recursive_analyze_Call(arg_value)
+
+            if keyword == "":
+                parts_n.append(argument)
+            else:
+                parts_n.append("=".join([keyword, argument]))
+
+        ## TODO: Persist this somehow...
+        return_value = lib + "." + attribute + "(" + ",".join(parts_n) + ")"
+
+        return return_value
+
+
+    def print_summary(self):
         print("Report:")
+
+        print(f"# imports {len(self.imports) + len(self.imports_from)}")
+        for imp in self.imports:
+            print(imp)
+            
+        for imp_from in self.imports_from:
+            print(imp_from)
+
         print(f"pandas imported: {self.pandas_imported}")
         print(f"pandas_alias: {self.pandas_alias}")
-        print(f"# imports {self.import_counter}")
-        for key, value in self.imports.items():
-            print(f"imported {key} as {value}")
-        for key, value in self.imports_from.items():
-            print(f'from {key} import {", ".join(value)}')
 
-        print(f"# assigns {self.assign_counter}")
+        print(f"# assignments {self.assign_counter}")
+        for assignment in self.assignments:
+            pass
+            # print(f"{var_name} = {value}")
 
-
-def analyze_Call(call: cst.Call):
-    func = call.func
-    lib, attribute = "", ""
-    if isinstance(func, cst.Attribute):  # TODO: Figure out what other flows can be returned by call
-        func_value = func.value
-        # Func Value is simple name
-        if isinstance(func_value, cst.Name):
-            lib = func_value.value
-        elif isinstance(func_value, cst.Call):
-            lib = analyze_Call(func_value)  # Recursive call
-
-        func_attr = func.attr
-        if isinstance(func_attr, cst.Name):
-            attribute = func_attr.value
-
-    args = call.args
-    parts_n = []
-    for arg in args:
-        keyword, argument = "", ""
-        arg_value = arg.value
-        if arg.keyword:
-            arg_keyword = arg.keyword
-            if isinstance(arg_keyword, cst.Name) or isinstance(arg_keyword, cst.SimpleString):
-                keyword = arg.keyword.value
-            elif isinstance(arg_keyword, cst.Call):
-                keyword = analyze_Call(arg_keyword)
-
-        if isinstance(arg_value, cst.Arg) or isinstance(arg_value, cst.SimpleString):
-            argument = arg_value.value
-        elif isinstance(arg_value, cst.Call):
-            argument = analyze_Call(arg_value)
-
-        if keyword == "":
-            parts_n.append(argument)
-        else:
-            parts_n.append("=".join([keyword, argument]))
-
-    ## TODO: Persist this somehow...
-    return_value = lib + "." + attribute + "(" + ",".join(parts_n) + ")"
-
-    return return_value
+        print(f"# dfs {len(self.dfs)}")
+        for df in self.dfs:
+            pass
+            # print(f"df: {var_name} = {value}")

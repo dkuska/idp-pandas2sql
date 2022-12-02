@@ -1,6 +1,6 @@
 import libcst as cst
-from cst_Transformer import Transformer
-from cst_Visitor import Visitor
+from cst.cst_Transformer import Transformer
+from cst.cst_Visitor import Visitor
 from libcst.tool import dump
 
 src = """
@@ -21,7 +21,7 @@ s,t = 'abc', 'def'
 
 def main():
     src_tree = cst.parse_module(src)
-    print(dump(src_tree))
+    print(cst.dump(src_tree))
 
     visitor = Visitor()
     src_tree.visit(visitor)
