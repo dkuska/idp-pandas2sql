@@ -1,6 +1,7 @@
 import typing
 
 import libcst as cst
+from pprint import pprint
 
 from utils.pd_df_operations import DF_OPERATIONS, PD_AGGREGATIONS, PD_ALIASES, PD_JOINS
 from utils.assignment import Assignment
@@ -70,36 +71,99 @@ class Visitor(cst.CSTVisitor):
         ## Parse values
         node_value = node.value
         if isinstance(node_value, cst.Call):
-            values.append(self.recursive_analyze_Call(node_value))
-            print(self.recursive_analyze_Call(node_value))
+            call_analysis = self.recursive_analyze_Call(node_value)
+            call_analysis['position'] = 0
+            
+            values.append({'value': call_analysis})
         elif isinstance(node_value, cst.SimpleString):
-            values.append(node_value.value)
-            print(node_value.value)
+            values.append({'value': node_value.value,
+                           'position': 0})
         if isinstance(node_value, cst.Tuple):
-            for element in node_value.elements:
-                ## TODO: Parse element.value if this is somethin complicated....
+            for i, element in enumerate(node_value.elements):
+                ##TODO: Parse element.value if this is somethin complicated....
                 if isinstance(element.value, cst.SimpleString):
-                    values.append(element.value.value)
-                    print(element.value.value)
+                    values.append({'value': element.value.value,
+                                   'position': i})
                     
-
+        # Base case: Every assignment has one return value
         if len(targets) == len(values):
             for target, value in zip(targets, values):
-                pass
+                self.assignments.append(Assignment(var_name=target, value=value))
+                
         elif len(targets) > len(values):
-            # Values returns multiple args
-            pass
+            pass  # TODO: Values returns multiple args    
+
+
+    def recursive_analyze_Call(self, call: cst.Call):
+        func = call.func
+        lib, attribute = "", ""
+        if isinstance(func, cst.Attribute):  # TODO: Figure out what other flows can be returned by call
+            func_value = func.value
+            # Func Value is simple name
+            if isinstance(func_value, cst.Name):
+                lib = func_value.value
+            elif isinstance(func_value, cst.Call):
+                lib = self.recursive_analyze_Call(func_value)  # Recursive call
+
+            func_attr = func.attr
+            if isinstance(func_attr, cst.Name):
+                attribute = func_attr.value
+
+        arguments = []
+        args = call.args
+        keywords = []
+        for arg in args:
+            keyword, argument = "", ""
+            arg_value = arg.value
+            if arg.keyword:
+                arg_keyword = arg.keyword
+                if isinstance(arg_keyword, cst.Name) or isinstance(arg_keyword, cst.SimpleString):
+                    keyword = arg.keyword.value
+                elif isinstance(arg_keyword, cst.Call):
+                    keyword = self.recursive_analyze_Call(arg_keyword)
+            else:
+                if isinstance(arg_value, cst.Arg) or isinstance(arg_value, cst.SimpleString):
+                    argument = arg_value.value
+                elif isinstance(arg_value, cst.Call):
+                    argument = self.recursive_analyze_Call(arg_value)
+                
+            if keyword == "":
+                arguments.append(argument)
+            else:
+                keywords.append({'keyword': keywords,
+                                 'argument': argument})
+                
+        ## TODO: Persist this somehow...
+        print(f'lib: {lib}')
+        print(f'attribute: {attribute}')
+        print(f'arguments: {arguments}')
+        print(f'keywords: {keywords}')
+        
+        return_dict = {
+            'lib': lib,
+            'attribute': attribute,
+            'arguments': arguments,
+            'keywords': keywords
+        }
+
+        return return_dict
 
 
     def analyze_assignments(self):
         # First analyze all assignments
         for assignment in self.assignments:
-            for df_operation in DF_OPERATIONS:
-                if df_operation in assignment:
-                    pass
-                    # self.dfs[var_name] = value
-        # Then analyze all DFs
+            value = assignment.value['value']
+            
+            if isinstance(value, str):
+                for df_operation in DF_OPERATIONS:            
+                    if df_operation in value['lib']:
+                        self.dfs.append(assignment)
+            elif isinstance(value, dict):
+                pass
+            
+        # Then analyze all DFs for SQL and AGGREGATIOn
         for df in self.dfs:
+            print(df)
             pass
 
     
@@ -117,49 +181,6 @@ class Visitor(cst.CSTVisitor):
                 self.pandas_alias = imp.lib_name
     
     
-    def recursive_analyze_Call(self, call: cst.Call):
-        func = call.func
-        lib, attribute = "", ""
-        if isinstance(func, cst.Attribute):  # TODO: Figure out what other flows can be returned by call
-            func_value = func.value
-            # Func Value is simple name
-            if isinstance(func_value, cst.Name):
-                lib = func_value.value
-            elif isinstance(func_value, cst.Call):
-                lib = self.recursive_analyze_Call(func_value)  # Recursive call
-
-            func_attr = func.attr
-            if isinstance(func_attr, cst.Name):
-                attribute = func_attr.value
-
-        args = call.args
-        parts_n = []
-        for arg in args:
-            keyword, argument = "", ""
-            arg_value = arg.value
-            if arg.keyword:
-                arg_keyword = arg.keyword
-                if isinstance(arg_keyword, cst.Name) or isinstance(arg_keyword, cst.SimpleString):
-                    keyword = arg.keyword.value
-                elif isinstance(arg_keyword, cst.Call):
-                    keyword = self.recursive_analyze_Call(arg_keyword)
-
-            if isinstance(arg_value, cst.Arg) or isinstance(arg_value, cst.SimpleString):
-                argument = arg_value.value
-            elif isinstance(arg_value, cst.Call):
-                argument = self.recursive_analyze_Call(arg_value)
-
-            if keyword == "":
-                parts_n.append(argument)
-            else:
-                parts_n.append("=".join([keyword, argument]))
-
-        ## TODO: Persist this somehow...
-        return_value = lib + "." + attribute + "(" + ",".join(parts_n) + ")"
-
-        return return_value
-
-
     def print_summary(self):
         print("Report:")
 
@@ -173,12 +194,12 @@ class Visitor(cst.CSTVisitor):
         print(f"pandas imported: {self.pandas_imported}")
         print(f"pandas_alias: {self.pandas_alias}")
 
-        print(f"# assignments {self.assign_counter}")
+        print(f"# assignments {len(self.assignments)}")
         for assignment in self.assignments:
-            pass
-            # print(f"{var_name} = {value}")
-
+            print(assignment.var_name)
+            pprint(assignment.value)
+            
+            
         print(f"# dfs {len(self.dfs)}")
         for df in self.dfs:
-            pass
-            # print(f"df: {var_name} = {value}")
+            pprint(df)

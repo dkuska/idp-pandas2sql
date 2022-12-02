@@ -29,7 +29,7 @@ def main():
 
     visitor.analyze_imports()
     visitor.analyze_assignments()
-    # visitor.print_summary()
+    visitor.print_summary()
 
 
 if __name__ == "__main__":

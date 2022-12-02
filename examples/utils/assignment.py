@@ -7,3 +7,10 @@ class Assignment():
     value: dict[str, Any]
     
     pandas: bool = False
+    join: bool = False
+    aggregation: bool = False
+
+# @dataclass
+# class AssignmentValue():
+    
+    
