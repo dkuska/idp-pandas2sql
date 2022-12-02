@@ -1,5 +1,4 @@
 import unittest
-from . import magic
 
 
 class Testing(unittest.TestCase):

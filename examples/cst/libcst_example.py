@@ -1,8 +1,7 @@
 import libcst as cst
-from libcst.tool import dump
-
-from cst_Visitor import Visitor
 from cst_Transformer import Transformer
+from cst_Visitor import Visitor
+from libcst.tool import dump
 
 src = """
 import numpy
@@ -18,17 +17,19 @@ df3 = df1.set_index('key').join(df2.set_index('key'))
 s,t = 'abc', 'def'
 
 """
+
+
 def main():
     src_tree = cst.parse_module(src)
     print(dump(src_tree))
-            
+
     visitor = Visitor()
     src_tree.visit(visitor)
     visitor.report()
 
     transformer = Transformer(visitor)
     modified_tree = src_tree.visit(transformer)
-    
+
     if not modified_tree.deep_equals(src_tree):
         ### Write modified_tree.code somewhere
         modified_code = modified_tree.code
