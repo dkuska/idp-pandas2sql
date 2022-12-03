@@ -10,7 +10,7 @@ def pipeline_with_join():
     tracks = pd.read_sql_query("SELECT * from tracks", con)
     con.close()
 
-    print(tracks.merge(media_types, on="MediaTypeId", how="inner"))
+    return tracks.merge(media_types, on="MediaTypeId", how="inner")
 
 
 def pipeline_with_filter():
@@ -24,4 +24,4 @@ def pipeline_with_filter():
     invoice_items = pd.read_sql_query("SELECT * from invoice_items", con)
     con.close()
 
-    print(invoice_items[invoice_items["UnitPrice"] == 1.99])
+    return invoice_items[invoice_items["UnitPrice"] == 1.99]
