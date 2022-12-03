@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from pprint import pprint
-from typing import Any
 
 import libcst as cst
 from utils.assignment import Assignment
@@ -8,8 +7,8 @@ from utils.cst_utils import (
     get_Attribute_information,
     get_ImportAlias_information,
     get_Name_value,
-    get_SimpleString_value,
-    get_Tuple_values,
+    parse_targets,
+    parse_values,
 )
 from utils.imports import Import, ImportFrom
 from utils.pd_df_operations import (
@@ -68,8 +67,8 @@ class Visitor(cst.CSTVisitor):
         self.imports_from.append(ImportFrom(lib_name=module, imports=imports))
 
     def visit_Assign(self, node: cst.Assign):
-        targets = self.parse_targets(node.targets)
-        values = self.parse_values(node.value)
+        targets = parse_targets(node.targets)
+        values = parse_values(node.value)
 
         # Persist results
         if len(targets) == len(values):
@@ -77,94 +76,6 @@ class Visitor(cst.CSTVisitor):
                 self.assignments.append(Assignment(var_name=target, value=value))
         elif len(targets) > len(values):
             pass  # TODO: Values returns multiple args
-
-    def parse_targets(self, targets: Sequence[cst.BaseAssignTargetExpression]) -> Sequence[Any]:
-        ret_targets = []
-        for target in targets:
-            target_target = target.target
-            if isinstance(target_target, cst.Name):
-                ret_targets.append(get_Name_value(target_target))
-            elif isinstance(target_target, cst.Tuple):
-                ret_targets.extend(get_Tuple_values(target_target))
-        return ret_targets
-
-    def parse_values(self, value: cst.BaseExpression) -> Sequence[Any]:
-        values = []
-        if isinstance(value, cst.Call):
-            values.append({"value": self.recursive_analyze_Call(value), "position": 0})
-        elif isinstance(value, cst.SimpleString):
-            values.append({"value": get_SimpleString_value(value), "position": 0})
-        if isinstance(value, cst.Tuple):
-            tuple_values = get_Tuple_values(value)
-            for i, tuple_value in enumerate(tuple_values):
-                values.append({"value": tuple_value, "position": i})
-        return values
-
-    def recursive_analyze_Call(self, call: cst.Call):
-        """
-        recursively analyze the Call object and return a dict containing information about it.
-        cst.Call consists of 2 main parts: func & args
-        func is the calling variable (can also be another call in case of chained invocations )
-        args is the list of arguments in the order in which they appear
-        """
-
-        # Parse first part of the call - caller/func
-        func = call.func
-        caller, attribute = "", ""
-        if isinstance(func, cst.Attribute):  # TODO: Figure out what other flows can be returned by call
-            func_value = func.value
-            # Func Value is a variable name
-            if isinstance(func_value, cst.Name):
-                caller = func_value.value
-            # Func value itself is another call
-            elif isinstance(func_value, cst.Call):
-                caller = self.recursive_analyze_Call(func_value)  # Recursive call
-
-            ## func.attr is always a cst.Name
-            func_attr = func.attr
-            if isinstance(func_attr, cst.Name):
-                attribute = func_attr.value
-
-        # Parse second part - args
-        arguments = []
-        args = call.args
-        keywords = []
-        for arg in args:
-            keyword, argument = "", ""
-            arg_value = arg.value
-            # Keyword is either a name or None
-            if arg.keyword:
-                arg_keyword = arg.keyword
-                if isinstance(arg_keyword, cst.Name):
-                    keyword = arg.keyword.value
-
-            if isinstance(arg_value, cst.Arg):
-                argument = arg_value.value
-            elif isinstance(arg_value, cst.SimpleString):
-                argument = arg_value.value
-            elif isinstance(arg_value, cst.Name):
-                argument = arg_value.value
-            elif isinstance(arg_value, cst.Call):
-                argument = self.recursive_analyze_Call(arg_value)
-
-            if keyword == "":
-                arguments.append(argument)
-            else:
-                keywords.append({"keyword": keyword, "argument": argument})
-
-        ## TODO: Persist this somehow...
-        # print(f'lib: {lib}')
-        # print(f'attribute: {attribute}')
-        # print(f'arguments: {arguments}')
-        # print(f'keywords: {keywords}')
-
-        return_dict = {
-            "caller": caller,  # Variable on which the function is called
-            "attribute": attribute,  # Attribute/Function of the caller
-            "arguments": arguments,  # For functions this includes positional arguments, should include order in the future probably
-            "keyword_arguments": keywords,  # Keyword arguments with name of the keyword and value.
-        }
-        return return_dict
 
     def analyze_assignments(self):
         """
