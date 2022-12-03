@@ -10,4 +10,4 @@ from .conftest import given
 )
 def test_loading_from_function(pipeline_function):
     code_manager = CodeManager.from_function(pipeline_function)
-    assert code_manager.execute_code() == pipeline_function()
+    assert all(code_manager.execute_code() == pipeline_function())

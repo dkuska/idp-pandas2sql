@@ -1,7 +1,9 @@
 import inspect
 from typing import Callable
 
-NEW_FUNCTION_NAME = "new_function"
+
+def new_function():
+    pass
 
 
 class CodeManager:
@@ -11,7 +13,7 @@ class CodeManager:
     def from_function(cls, function: Callable):
         manager = cls()
         funcion_name = function.__name__
-        manager.code = inspect.getsource(function).replace(f"def {funcion_name}", f"def {NEW_FUNCTION_NAME}")
+        manager.code = inspect.getsource(function).replace(f"def {funcion_name}", f"def {new_function.__name__}")
         return manager
 
     # * it is nice to work with files but working with functions is easier, especially when comparing results
@@ -28,7 +30,8 @@ class CodeManager:
         pass
 
     def execute_code(self):
-        return exec(f"{self.code}{NEW_FUNCTION_NAME}()")
+        exec(f"{self.code}")
+        return new_function()
 
     # def write_to_file(self, path):
     #     pass
