@@ -142,7 +142,6 @@ class Visitor(cst.CSTVisitor):
         for imp in self.imports_from:
             if imp.lib_name in PD_ALIASES:
                 self.pandas_imported = True
-                self.pandas_alias = imp.lib_name
 
     def print_summary(self):
         """
