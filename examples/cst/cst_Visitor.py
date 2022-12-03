@@ -97,32 +97,42 @@ class Visitor(cst.CSTVisitor):
 
 
     def recursive_analyze_Call(self, call: cst.Call):
+        """
+        recursively analyze the Call object and return a dict containing information about it.
+        cst.Call consists of 2 main parts: func & args
+        func is the calling variable (can also be another call in case of chained invocations )
+        args is the list of arguments in the order in which they appear
+        """   
+
+        # Parse first part of the call - caller/func
         func = call.func
         caller, attribute = "", ""
         if isinstance(func, cst.Attribute):  # TODO: Figure out what other flows can be returned by call
             func_value = func.value
-            # Func Value is simple name
+            # Func Value is a variable name
             if isinstance(func_value, cst.Name):
                 caller = func_value.value
+            # Func value itself is another call
             elif isinstance(func_value, cst.Call):
                 caller = self.recursive_analyze_Call(func_value)  # Recursive call
 
+            ## func.attr is always a cst.Name
             func_attr = func.attr
             if isinstance(func_attr, cst.Name):
                 attribute = func_attr.value
 
+        # Parse second part - args
         arguments = []
         args = call.args
         keywords = []
         for arg in args:
             keyword, argument = "", ""
             arg_value = arg.value
+            # Keyword is either a name or None
             if arg.keyword:
                 arg_keyword = arg.keyword
-                if isinstance(arg_keyword, cst.Name) or isinstance(arg_keyword, cst.SimpleString):
+                if isinstance(arg_keyword, cst.Name):
                     keyword = arg.keyword.value
-                elif isinstance(arg_keyword, cst.Call):
-                    keyword = self.recursive_analyze_Call(arg_keyword)
                     
                     
             if isinstance(arg_value, cst.Arg):
@@ -147,24 +157,34 @@ class Visitor(cst.CSTVisitor):
         # print(f'keywords: {keywords}')
         
         return_dict = {
-            'caller': caller,
-            'attribute': attribute,
-            'arguments': arguments,
-            'keyword_arguments': keywords
+            'caller': caller,   # Variable on which the function is called
+            'attribute': attribute, # Attribute/Function of the caller
+            'arguments': arguments, # For functions this includes positional arguments, should include order in the future probably
+            'keyword_arguments': keywords # Keyword arguments with name of the keyword and value. 
         }
         return return_dict
 
 
     def analyze_assignments(self):
+        """ 
+        Analyze the assignments inside self.assignments.
+        Checks if DataFrame Objects and SQL/JOIN/Aggregation operations are present somewhere.
+        Very 'stupid' first drauft of an implementation.
+        Ideally this should split up into more functions.
+        First Pandas, then SQL, then JOIN/Aggregation
+        """
         # First analyze all assignments
         for assignment in self.assignments:
             value = assignment.value['value']  # TODO: Rethink these god damn names....
             # print(type(value))
             
+            ### Simple assignments with singular values like `s='abc'` are caught with this branch
             if isinstance(value, str):
                 for df_operation in DF_OPERATIONS:            
                     if df_operation in value:
                         self.dfs.append(assignment)
+            # Otherwise more sophisticated analysis is necessary.
+            # Should include recursive search of the dict, since for nested calls this contains even more dicts....
             elif isinstance(value, dict):
                 # pprint(value)
                 for relevant_key in ['caller', 'attribute']:
@@ -197,6 +217,10 @@ class Visitor(cst.CSTVisitor):
 
     
     def analyze_imports(self):
+        """ 
+        Analyze imports and imports_from for pandas. 
+        If pandas operations are not included, the rest of the processing could be skipped.
+        """
         for imp in self.imports:       
             ### PANDAS CHECK
             if imp.lib_name in PD_ALIASES or imp.alias in PD_ALIASES:
@@ -212,6 +236,9 @@ class Visitor(cst.CSTVisitor):
     
     
     def print_summary(self):
+        """
+        Util for debugging purposes.
+        """
         print('### Imports ###')
         print(f"# imports {len(self.imports) + len(self.imports_from)}")
         for imp in self.imports:
