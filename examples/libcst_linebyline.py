@@ -1,7 +1,5 @@
 import libcst as cst
-from cst.cst_Transformer import Transformer
 from cst.cst_Visitor import Visitor
-from libcst.tool import dump
 
 src = """
 import numpy
