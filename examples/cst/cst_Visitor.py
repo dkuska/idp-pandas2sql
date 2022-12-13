@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from pprint import pprint
 
 import libcst as cst
-from utils.assignment import Assignment
+from model.assignment import Assignment
 from utils.cst_utils import (
     get_Attribute_information,
     get_ImportAlias_information,
@@ -10,7 +10,7 @@ from utils.cst_utils import (
     parse_targets,
     parse_values,
 )
-from utils.imports import Import, ImportFrom
+from model.imports import Import, ImportFrom
 from utils.pd_df_operations import (
     DF_OPERATIONS,
     PD_AGGREGATIONS,
