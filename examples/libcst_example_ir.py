@@ -1,6 +1,5 @@
 import libcst as cst
 from cst.cst_NodeSelector import NodeSelector
-from model.nodes import AggregationNode, JoinNode, Node, PandasNode, SQLNode
 
 src = """
 import numpy
@@ -16,6 +15,7 @@ df3 = df1.set_index('key').join(df2.set_index('key'))
 s,t = 'abc', 'def'
 
 """
+
 
 def main():
     # Transform source into cst

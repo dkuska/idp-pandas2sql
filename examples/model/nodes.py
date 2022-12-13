@@ -1,15 +1,19 @@
 from abc import ABC
 from dataclasses import dataclass
+from typing import Optional
+
 import libcst as cst
-from typing import Union, Any, Optional
+
 
 @dataclass
 class Node(ABC):
     origin: cst.CSTNode
 
+
 @dataclass
 class PandasNode(Node):
     pass
+
 
 @dataclass
 class SQLNode(PandasNode):
@@ -19,6 +23,7 @@ class SQLNode(PandasNode):
 @dataclass
 class JoinNode(PandasNode):
     parents: Optional[list[cst.CSTNode]] = None
+
 
 @dataclass
 class AggregationNode(PandasNode):
