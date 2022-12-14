@@ -32,6 +32,13 @@
 - Very complicated implementation
 - Internal data structure not necessarily similar to pandas DataFrames
 
+### Weld
+
+- It has the same vision we have
+- Its intermediate representation is an imperative language that uses builders, mergers, etc.
+- It doesn't understand SQL, only library functions
+- No code available
+
 ## Considerations for our IR
 
 - Grizzly seems like a good starting point
