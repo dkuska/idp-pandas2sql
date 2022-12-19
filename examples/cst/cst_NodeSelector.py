@@ -35,6 +35,20 @@ class NodeSelector(cst.CSTVisitor):
 
         super().__init__()
 
+
+    def generic_visit(self, node: cst.CSTNode):
+        class_name = str(node.__class__.__name__)
+        class_name = class_name.replace('CST', '')
+        
+        method_name = f'visit_{class_name}'
+        
+        if hasattr(self, method_name):
+            method = getattr(self, method_name)
+            
+        else:
+            print(f'Function is not defined for: {method_name}')
+
+
     def visit_Import(self, node: cst.Import) -> None:
         imports = []
         for importAlias in node.names:
