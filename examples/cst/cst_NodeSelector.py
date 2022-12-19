@@ -82,9 +82,16 @@ class NodeSelector(cst.CSTVisitor):
             "JOIN_NODE": False,
             "AGGREGATION_NODE": False,
         }
-
-        targets = parse_targets(node.targets)
-        values = parse_values(node.value)
+        
+        targets = []
+        for target in node.targets:
+            targets.append(self.generic_visit(target))
+        print(targets)
+            
+        values = self.generic_visit(node.value)    
+        print(values)
+        # targets = parse_targets(node.targets)
+        # values = parse_values(node.value)
 
         if self.pandas_imported:
             # Persist results
@@ -113,6 +120,20 @@ class NodeSelector(cst.CSTVisitor):
 
         self.nodes.append(this_node)
 
+    def visit_AssignTarget(self, node: cst.AssignTarget):
+        ret_targets = []
+        ret_targets.append(self.generic_visit((node.target)))
+        return ret_targets
+
+    def visit_Call(self, node: cst.Call):
+        func = self.generic_visit(node.func)
+
+        args = []
+        for arg in node.args:
+            args.append(self.generic_visit(arg))
+        
+        return func, args
+
     def visit_ImportAlias(self, node: cst.ImportAlias):
         asname = ""
         if node.asname:
@@ -127,6 +148,14 @@ class NodeSelector(cst.CSTVisitor):
         attr = self.generic_visit(node.attr)
 
         return value, attr
+
+    def visit_Arg(self, node: cst.Arg):
+        arg_value = self.generic_visit(node.value)
+        
+        if node.keyword:
+            arg_keyword = self.generic_visit(node.keyword)
+            return arg_keyword, arg_value
+        return arg_value
 
     def visit_Tuple(self, node: cst.Tuple) -> Sequence[str]:
         ret_values = []
@@ -176,5 +205,4 @@ class NodeSelector(cst.CSTVisitor):
                 if key == "attribute" and val in PD_AGGREGATIONS:
                     node_type["AGGREGATION_NODE"] = True
 
-        print(node_type)
         return node_type

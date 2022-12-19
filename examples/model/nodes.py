@@ -18,12 +18,16 @@ class PandasNode(Node):
 
 @dataclass
 class DataFrameNode(PandasNode):
+    target: Optional[str] = None
+
     sql_based: bool = False
     index: Optional[str] = None
 
 
 @dataclass
 class SQLNode(PandasNode):
+    target: Optional[str] = None
+
     sql_str: Optional[str] = None
     con: Optional[str] = None
     index: Optional[str] = None
@@ -39,15 +43,15 @@ class SQLNode(PandasNode):
         return ""  # TODO: Implement by traversing origin
 
     def extract_con(self, origin: cst.CSTNode) -> str:
-        return "" # TODO: Implement by traversing origin
+        return ""  # TODO: Implement by traversing origin
 
     def extract_index(self, origin: cst.CSTNode) -> str:
-        return "" # TODO: Implement by traversing origin
+        return ""  # TODO: Implement by traversing origin
 
 
 @dataclass
 class JoinNode(PandasNode):
-    parents: Optional[list[cst.CSTNode]] = None #TODO: Figure out what this could be used for...
+    parents: Optional[list[cst.CSTNode]] = None  # TODO: Figure out what this could be used for...
     left: Optional[SQLNode] = None
     right: Optional[SQLNode] = None
     on: Optional[tuple[str]] = None
@@ -57,7 +61,7 @@ class JoinNode(PandasNode):
     sort: Optional[bool] = False
     validate: Optional[str] = ""
 
-    def __init__(self, origin, parents = None):
+    def __init__(self, origin, parents=None):
         self.origin = origin
         self.parents = parents
         self.left, self.right = self.extract_join_partners(origin)
@@ -68,26 +72,26 @@ class JoinNode(PandasNode):
         self.validate = self.extract_validate(origin)
 
     def extract_join_partners(self, origin: cst.CSTNode) -> tuple[cst.CSTNode, cst.CSTNode]:
-        pass # TODO: Implement by traversing origin, will also need additional information about all other nodes
+        pass  # TODO: Implement by traversing origin, will also need additional information about all other nodes
 
     def extract_on(self, origin: cst.CSTNode) -> str:
-        pass # TODO: Implement by traversing origin
+        pass  # TODO: Implement by traversing origin
 
     def extract_how(self, origin: cst.CSTNode) -> str:
-        pass # TODO: Implement by traversing origin
+        pass  # TODO: Implement by traversing origin
 
     def extract_suffix(self, origin: cst.CSTNode) -> tuple[str, str]:
-        pass # TODO: Implement by traversing origin
+        pass  # TODO: Implement by traversing origin
 
     def extract_sort(self, origin: cst.CSTNode) -> bool:
-        pass # TODO: Implement by traversing origin
+        pass  # TODO: Implement by traversing origin
 
     def extract_validate(self, origin: cst.CSTNode) -> str:
-        pass # TODO: Implement by traversing origin
-
+        pass  # TODO: Implement by traversing origin
 
     def create_sql_query(self) -> str:
-        return ''
+        return ""
+
 
 @dataclass
 class AggregationNode(PandasNode):
