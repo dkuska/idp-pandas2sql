@@ -2,7 +2,6 @@ from collections.abc import Sequence
 
 import libcst as cst
 from model.nodes import AggregationNode, JoinNode, Node, PandasNode, SQLNode
-from utils.cst_utils import parse_targets, parse_values
 from utils.pd_df_operations import (
     DF_OPERATIONS,
     PD_AGGREGATIONS,
@@ -35,6 +34,7 @@ class NodeSelector(cst.CSTVisitor):
 
         method_name = f"visit_{class_name}"
 
+        # TODO: Figure out better way for this, since libcst has methods defined for all types of nodes...
         if hasattr(self, method_name):
             method = getattr(self, method_name)
             return method(node)
@@ -82,16 +82,12 @@ class NodeSelector(cst.CSTVisitor):
             "JOIN_NODE": False,
             "AGGREGATION_NODE": False,
         }
-        
+
         targets = []
         for target in node.targets:
             targets.append(self.generic_visit(target))
-        print(targets)
-            
-        values = self.generic_visit(node.value)    
-        print(values)
-        # targets = parse_targets(node.targets)
-        # values = parse_values(node.value)
+
+        values = self.generic_visit(node.value)
 
         if self.pandas_imported:
             # Persist results
@@ -122,16 +118,15 @@ class NodeSelector(cst.CSTVisitor):
 
     def visit_AssignTarget(self, node: cst.AssignTarget):
         ret_targets = []
-        ret_targets.append(self.generic_visit((node.target)))
+        ret_targets.append(self.generic_visit(node.target))
         return ret_targets
 
     def visit_Call(self, node: cst.Call):
         func = self.generic_visit(node.func)
-
         args = []
         for arg in node.args:
             args.append(self.generic_visit(arg))
-        
+
         return func, args
 
     def visit_ImportAlias(self, node: cst.ImportAlias):
@@ -151,7 +146,7 @@ class NodeSelector(cst.CSTVisitor):
 
     def visit_Arg(self, node: cst.Arg):
         arg_value = self.generic_visit(node.value)
-        
+
         if node.keyword:
             arg_keyword = self.generic_visit(node.keyword)
             return arg_keyword, arg_value
@@ -163,6 +158,10 @@ class NodeSelector(cst.CSTVisitor):
             ret_values.append(self.generic_visit(element))
         return ret_values
 
+
+    def visit_Element(self, node: cst.Element):
+        return self.generic_visit(node.value)
+        
     def visit_Name(self, node: cst.Name) -> str:
         return node.value
 
