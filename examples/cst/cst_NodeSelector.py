@@ -30,7 +30,7 @@ class NodeSelector(cst.CSTVisitor):
 
     def generic_visit(self, node: cst.CSTNode):
         class_name = str(node.__class__.__name__)
-        class_name = class_name.replace("CST", "")
+        class_name = class_name.replace("CST", "")  # Just in case there are weird class-names...
 
         method_name = f"visit_{class_name}"
 
@@ -41,47 +41,22 @@ class NodeSelector(cst.CSTVisitor):
         else:
             print(f"Function is not defined for: {method_name}")
 
-    def visit_Import(self, node: cst.Import) -> None:
-        imports = []
-        for importAlias in node.names:
-            imports.append(self.generic_visit(importAlias))
+    def visit_Arg(self, node: cst.Arg):
+        arg_value = self.generic_visit(node.value)
 
-        for imp in imports:
-            lib_name, alias_name = imp
-
-            # Pandas Check
-            if lib_name in PD_ALIASES:
-                self.pandas_imported = True
-                self.pandas_alias = alias_name
-
-        self.nodes.append(Node(origin=node))
-
-    def visit_ImportFrom(self, node: cst.ImportFrom) -> None:
-
-        module = self.generic_visit(node.module)
-
-        imports = []
-        if isinstance(node.names, Sequence):
-            for name in node.names:
-                imports.append(self.generic_visit(name))
-        else:
-            imports.append(self.generic_visit(node))
-
-        # Pandas Check
-        if module in PD_ALIASES or module in self.pandas_alias:
-            self.pandas_imported = True
-            self.pandas_imported_functions.append(imports)
-
-        self.nodes.append(Node(origin=node))
+        if node.keyword:
+            arg_keyword = self.generic_visit(node.keyword)
+            return arg_keyword, arg_value
+        return arg_value
 
     def visit_Assign(self, node: cst.Assign):
-        node_type = {
-            "PANDAS_NODE": False,
-            "DATAFRAME_NODE": False,
-            "SQL_NODE": False,
-            "JOIN_NODE": False,
-            "AGGREGATION_NODE": False,
-        }
+        # node_type = {
+        #     "PANDAS_NODE": False,
+        #     "DATAFRAME_NODE": False,
+        #     "SQL_NODE": False,
+        #     "JOIN_NODE": False,
+        #     "AGGREGATION_NODE": False,
+        # }
 
         targets = []
         for target in node.targets:
@@ -116,6 +91,12 @@ class NodeSelector(cst.CSTVisitor):
 
         self.nodes.append(this_node)
 
+    def visit_Attribute(self, node: cst.Attribute) -> tuple:
+        value = self.generic_visit(node.value)
+        attr = self.generic_visit(node.attr)
+
+        return value, attr
+
     def visit_AssignTarget(self, node: cst.AssignTarget):
         ret_targets = []
         ret_targets.append(self.generic_visit(node.target))
@@ -129,44 +110,62 @@ class NodeSelector(cst.CSTVisitor):
 
         return func, args
 
+    def visit_Element(self, node: cst.Element):
+        return self.generic_visit(node.value)
+
+    def visit_Import(self, node: cst.Import) -> None:
+        imports = []
+        for importAlias in node.names:
+            imports.append(self.generic_visit(importAlias))
+
+        for imp in imports:
+            lib_name, alias_name = imp
+
+            # Pandas Check
+            if lib_name in PD_ALIASES:
+                self.pandas_imported = True
+                self.pandas_alias = alias_name
+
+        self.nodes.append(Node(origin=node))
+
     def visit_ImportAlias(self, node: cst.ImportAlias):
         asname = ""
         if node.asname:
             asname = self.generic_visit(node.asname)
         return self.generic_visit(node.name), asname
 
+    def visit_ImportFrom(self, node: cst.ImportFrom) -> None:
+
+        module = self.generic_visit(node.module)
+
+        imports = []
+        if isinstance(node.names, Sequence):
+            for name in node.names:
+                imports.append(self.generic_visit(name))
+        else:
+            imports.append(self.generic_visit(node))
+
+        # Pandas Check
+        if module in PD_ALIASES or module in self.pandas_alias:
+            self.pandas_imported = True
+            self.pandas_imported_functions.append(imports)
+
+        self.nodes.append(Node(origin=node))
+
     def visit_ImportStar(self, node: cst.ImportStar) -> str:
         return "*"
 
-    def visit_Attribute(self, node: cst.Attribute) -> tuple:
-        value = self.generic_visit(node.value)
-        attr = self.generic_visit(node.attr)
+    def visit_Name(self, node: cst.Name) -> str:
+        return node.value
 
-        return value, attr
-
-    def visit_Arg(self, node: cst.Arg):
-        arg_value = self.generic_visit(node.value)
-
-        if node.keyword:
-            arg_keyword = self.generic_visit(node.keyword)
-            return arg_keyword, arg_value
-        return arg_value
+    def visit_SimpleString(self, node: cst.SimpleString) -> str:
+        return node.value
 
     def visit_Tuple(self, node: cst.Tuple) -> Sequence[str]:
         ret_values = []
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
         return ret_values
-
-
-    def visit_Element(self, node: cst.Element):
-        return self.generic_visit(node.value)
-        
-    def visit_Name(self, node: cst.Name) -> str:
-        return node.value
-
-    def visit_SimpleString(self, node: cst.SimpleString) -> str:
-        return node.value
 
     def recursively_visit_value(self, value: dict):
         node_type = {
