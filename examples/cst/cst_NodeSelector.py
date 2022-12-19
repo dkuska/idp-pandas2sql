@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 import libcst as cst
-from model.nodes import AggregationNode, JoinNode, Node, PandasNode, SQLNode
+from model.nodes import AggregationNode, DataFrameNode, JoinNode, Node, SQLNode
 from utils.pd_df_operations import (
     DF_OPERATIONS,
     PD_AGGREGATIONS,
@@ -50,42 +50,34 @@ class NodeSelector(cst.CSTVisitor):
         return arg_value
 
     def visit_Assign(self, node: cst.Assign):
-        # node_type = {
-        #     "PANDAS_NODE": False,
-        #     "DATAFRAME_NODE": False,
-        #     "SQL_NODE": False,
-        #     "JOIN_NODE": False,
-        #     "AGGREGATION_NODE": False,
-        # }
+        node_type = {
+            "PANDAS_NODE": False,
+            "DATAFRAME_NODE": False,
+            "SQL_NODE": False,
+            "JOIN_NODE": False,
+            "AGGREGATION_NODE": False,
+        }
 
         targets = []
         for target in node.targets:
             targets.append(self.generic_visit(target))
 
         values = self.generic_visit(node.value)
-
         if self.pandas_imported:
-            # Persist results
-            if len(targets) == len(values):
-                for target, value in zip(targets, values):
-                    node_type = self.recursively_visit_value(value)
-                    for key, val in node_type.items():
-                        if val:
-                            node_type[key] = True
-
-            elif len(targets) > len(values):
-                pass  # TODO: Values returns multiple args
-        else:
-            self.nodes.append(Node(origin=node))
+            if isinstance(values, list):
+                # TODO: Figure this out, multiple return values
+                pass
+            elif isinstance(values, dict):
+                node_type = self.recursively_visit_value(values)
 
         if node_type["AGGREGATION_NODE"]:
-            this_node = AggregationNode(origin=node)
+            this_node = AggregationNode(origin=node, targets=targets, values=values)
         elif node_type["JOIN_NODE"]:
-            this_node = JoinNode(origin=node)
+            this_node = JoinNode(origin=node, targets=targets, values=values)
         elif node_type["SQL_NODE"]:
-            this_node = SQLNode(origin=node)
-        elif node_type["PANDAS_NODE"]:
-            this_node = PandasNode(origin=node)
+            this_node = SQLNode(origin=node, targets=targets, values=values)
+        elif node_type["DATAFRAME_NODE"]:
+            this_node = DataFrameNode(origin=node, targets=targets, values=values)
         else:
             this_node = Node(origin=node)
 
@@ -95,7 +87,8 @@ class NodeSelector(cst.CSTVisitor):
         value = self.generic_visit(node.value)
         attr = self.generic_visit(node.attr)
 
-        return value, attr
+        return {"value": value, "attr": attr}
+        # return value, attr
 
     def visit_AssignTarget(self, node: cst.AssignTarget):
         ret_targets = []
@@ -108,12 +101,12 @@ class NodeSelector(cst.CSTVisitor):
         for arg in node.args:
             args.append(self.generic_visit(arg))
 
-        return func, args
+        return {"func": func, "args": args}
 
     def visit_Element(self, node: cst.Element):
         return self.generic_visit(node.value)
 
-    def visit_Import(self, node: cst.Import) -> None:
+    def visit_Import(self, node: cst.Import):
         imports = []
         for importAlias in node.names:
             imports.append(self.generic_visit(importAlias))
@@ -124,7 +117,7 @@ class NodeSelector(cst.CSTVisitor):
             # Pandas Check
             if lib_name in PD_ALIASES:
                 self.pandas_imported = True
-                self.pandas_alias = alias_name
+                self.pandas_alias = alias_name if alias_name is not None else lib_name
 
         self.nodes.append(Node(origin=node))
 
@@ -134,7 +127,7 @@ class NodeSelector(cst.CSTVisitor):
             asname = self.generic_visit(node.asname)
         return self.generic_visit(node.name), asname
 
-    def visit_ImportFrom(self, node: cst.ImportFrom) -> None:
+    def visit_ImportFrom(self, node: cst.ImportFrom):
 
         module = self.generic_visit(node.module)
 
@@ -161,7 +154,7 @@ class NodeSelector(cst.CSTVisitor):
     def visit_SimpleString(self, node: cst.SimpleString) -> str:
         return node.value
 
-    def visit_Tuple(self, node: cst.Tuple) -> Sequence[str]:
+    def visit_Tuple(self, node: cst.Tuple) -> Sequence:
         ret_values = []
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
@@ -177,30 +170,26 @@ class NodeSelector(cst.CSTVisitor):
         }
 
         for key, val in value.items():
-            print(f"key:   {key}")
-            print(f"value: {val}")
-
             if isinstance(val, dict):
                 rec_result = self.recursively_visit_value(val)
-
                 for key, value in rec_result.items():
                     if value == True:
                         node_type[key] = True
 
             else:
-                if key == "caller" and val in self.pandas_alias:
+                # Pandas Node check
+                if key == "value" and val in self.pandas_alias:
                     node_type["PANDAS_NODE"] = True
-
-                if key == "attribute" and val in DF_OPERATIONS:
+                # DataFrame Node check
+                if key == "attr" and val in DF_OPERATIONS:
                     node_type["DATAFRAME_NODE"] = True
-
-                if key == "attribute" and val in PD_SQL:
+                # SQL Node check
+                if key == "attr" and val in PD_SQL:
                     node_type["SQL_NODE"] = True
-
-                if key == "attribute" and val in PD_JOINS:
+                #
+                if key == "attr" and val in PD_JOINS:
                     node_type["JOIN_NODE"] = True
-
-                if key == "attribute" and val in PD_AGGREGATIONS:
+                if key == "attr" and val in PD_AGGREGATIONS:
                     node_type["AGGREGATION_NODE"] = True
 
         return node_type

@@ -27,8 +27,8 @@ def main():
     for statement in src_tree.body:
         statement.visit(node_selector)
 
-    # for node in node_selector.nodes:
-    #     print(type(node))
+    for node in node_selector.nodes:
+        print(type(node))
 
 
 if __name__ == "__main__":
