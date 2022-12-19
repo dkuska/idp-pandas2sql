@@ -2,13 +2,7 @@ from collections.abc import Sequence
 
 import libcst as cst
 from model.nodes import AggregationNode, JoinNode, Node, PandasNode, SQLNode
-from utils.cst_utils import (
-    get_Attribute_information,
-    get_ImportAlias_information,
-    get_Name_value,
-    parse_targets,
-    parse_values,
-)
+from utils.cst_utils import parse_targets, parse_values
 from utils.pd_df_operations import (
     DF_OPERATIONS,
     PD_AGGREGATIONS,
@@ -35,19 +29,17 @@ class NodeSelector(cst.CSTVisitor):
 
         super().__init__()
 
-
     def generic_visit(self, node: cst.CSTNode):
         class_name = str(node.__class__.__name__)
-        class_name = class_name.replace('CST', '')
-        
-        method_name = f'visit_{class_name}'
-        
+        class_name = class_name.replace("CST", "")
+
+        method_name = f"visit_{class_name}"
+
         if hasattr(self, method_name):
             method = getattr(self, method_name)
             return method(node)
         else:
-            print(f'Function is not defined for: {method_name}')
-
+            print(f"Function is not defined for: {method_name}")
 
     def visit_Import(self, node: cst.Import) -> None:
         imports = []
@@ -65,7 +57,7 @@ class NodeSelector(cst.CSTVisitor):
         self.nodes.append(Node(origin=node))
 
     def visit_ImportFrom(self, node: cst.ImportFrom) -> None:
-        
+
         module = self.generic_visit(node.module)
 
         imports = []
@@ -74,10 +66,6 @@ class NodeSelector(cst.CSTVisitor):
                 imports.append(self.generic_visit(name))
         else:
             imports.append(self.generic_visit(node))
-        # elif isinstance(node.names, cst.ImportStar):
-        #     imports.append("*")
-        # else:
-        #     pass  # TODO
 
         # Pandas Check
         if module in PD_ALIASES or module in self.pandas_alias:
@@ -125,37 +113,32 @@ class NodeSelector(cst.CSTVisitor):
 
         self.nodes.append(this_node)
 
-
     def visit_ImportAlias(self, node: cst.ImportAlias):
-        asname = ''
+        asname = ""
         if node.asname:
             asname = self.generic_visit(node.asname)
         return self.generic_visit(node.name), asname
 
     def visit_ImportStar(self, node: cst.ImportStar) -> str:
-        return '*'
+        return "*"
 
     def visit_Attribute(self, node: cst.Attribute) -> tuple:
         value = self.generic_visit(node.value)
         attr = self.generic_visit(node.attr)
-        
+
         return value, attr
-        
-        
+
     def visit_Tuple(self, node: cst.Tuple) -> Sequence[str]:
         ret_values = []
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
         return ret_values
 
-
     def visit_Name(self, node: cst.Name) -> str:
         return node.value
 
-
     def visit_SimpleString(self, node: cst.SimpleString) -> str:
         return node.value
-
 
     def recursively_visit_value(self, value: dict):
         node_type = {
