@@ -34,16 +34,35 @@ class SQLNode(DataFrameNode):
     def __init__(self, origin, targets, values):
         super().__init__(origin=origin, targets=targets, values=values)
         self.sql_based = True
+        self.sql_str = self.extract_sql_str(origin)
+        self.con = self.extract_con(origin)
+        self.index = self.extract_index(origin)
 
-        # self.sql_str = self.extract_sql_str(origin)
-        # self.con = self.extract_con(origin)
-        # self.index = self.extract_index(origin)
+        # DEBUG
+        print(self.sql_str)
+        print(self.con)
 
     def extract_sql_str(self, origin: cst.CSTNode) -> str:
-        return ""  # TODO: Implement by traversing origin
+        args = self.values['args']
+        # Iterate over Arguments to check if it was called as keyword parameter
+        for arg in args:
+            if isinstance(arg, tuple):
+                keyword_name, keyword_value = arg        
+                if keyword_name == 'sql':
+                    return keyword_value
+        # If this is not the case, return positional argument         
+        return args[0]
 
     def extract_con(self, origin: cst.CSTNode) -> str:
-        return ""  # TODO: Implement by traversing origin
+        args = self.values['args']
+        # Iterate over Arguments to check if it was called as keyword parameter
+        for arg in args:
+            if isinstance(arg, tuple):
+                keyword_name, keyword_value = arg        
+                if keyword_name == 'con':
+                    return keyword_value
+        # If this is not the case, return positional argument  
+        return args[1]
 
     def extract_index(self, origin: cst.CSTNode) -> str:
         return ""  # TODO: Implement by traversing origin
@@ -65,12 +84,12 @@ class JoinNode(DataFrameNode):
         super().__init__(origin=origin, targets=targets, values=values)
         self.sql_based = True
 
-        # self.left, self.right = self.extract_join_partners(origin)
-        # self.on = self.extract_on(origin)
-        # self.how = self.extract_how(origin)
-        # self.lsuffix, self.rsuffix = self.extract_suffix(origin)
-        # self.sort = self.extract_sort(origin)
-        # self.validate = self.extract_validate(origin)
+        self.left, self.right = self.extract_join_partners(origin)
+        self.on = self.extract_on(origin)
+        self.how = self.extract_how(origin)
+        self.lsuffix, self.rsuffix = self.extract_suffix(origin)
+        self.sort = self.extract_sort(origin)
+        self.validate = self.extract_validate(origin)
 
     def extract_join_partners(self, origin: cst.CSTNode) -> tuple[cst.CSTNode, cst.CSTNode]:
         return (

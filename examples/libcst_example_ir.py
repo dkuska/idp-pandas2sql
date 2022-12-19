@@ -6,8 +6,10 @@ import numpy
 import pandas as pd
 from pandas import read_sql
 
-df1 = pd.read_sql("SELECT * FROM table1")
-df2 = pd.read_sql("SELECT * FROM table2")
+con1 = blub()
+
+df1 = pd.read_sql("SELECT * FROM table1", con1)
+df2 = pd.read_sql(sql="SELECT * FROM table2", con=con1)
 df3 = df1.join(df2, how='inner')
 
 df3 = df1.set_index('key').join(df2.set_index('key'))

@@ -50,6 +50,13 @@ class NodeSelector(cst.CSTVisitor):
         return arg_value
 
     def visit_Assign(self, node: cst.Assign):
+        # Extract information from node
+        targets = []
+        for target in node.targets:
+            targets.append(self.generic_visit(target))
+        values = self.generic_visit(node.value)
+        
+        # Determine node type
         node_type = {
             "PANDAS_NODE": False,
             "DATAFRAME_NODE": False,
@@ -57,12 +64,6 @@ class NodeSelector(cst.CSTVisitor):
             "JOIN_NODE": False,
             "AGGREGATION_NODE": False,
         }
-
-        targets = []
-        for target in node.targets:
-            targets.append(self.generic_visit(target))
-
-        values = self.generic_visit(node.value)
         if self.pandas_imported:
             if isinstance(values, list):
                 # TODO: Figure this out, multiple return values
@@ -70,6 +71,7 @@ class NodeSelector(cst.CSTVisitor):
             elif isinstance(values, dict):
                 node_type = self.recursively_visit_value(values)
 
+        # Persist Node Information
         if node_type["AGGREGATION_NODE"]:
             this_node = AggregationNode(origin=node, targets=targets, values=values)
         elif node_type["JOIN_NODE"]:
@@ -88,7 +90,6 @@ class NodeSelector(cst.CSTVisitor):
         attr = self.generic_visit(node.attr)
 
         return {"value": value, "attr": attr}
-        # return value, attr
 
     def visit_AssignTarget(self, node: cst.AssignTarget):
         ret_targets = []
