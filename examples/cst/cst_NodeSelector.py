@@ -120,7 +120,7 @@ class NodeSelector(cst.CSTVisitor):
     def visit_Expr(self, node: cst.Expr):
         # TODO: Implement this, will be important for Pandas Inplace operations!
         pass
-    
+
     def visit_Import(self, node: cst.Import):
         imports = []
         for importAlias in node.names:
