@@ -12,6 +12,8 @@ df1 = pd.read_sql("SELECT * FROM table1", con1)
 df2 = pd.read_sql(sql="SELECT * FROM table2", con=con1)
 df3 = df1.join(df2, how='inner')
 
+df1.set_index('key', inplace=True)
+
 df3 = df1.set_index('key').join(df2.set_index('key'))
 
 s,t = 'abc', 'def'
@@ -32,7 +34,7 @@ def main():
     for node in node_selector.nodes:
         print(type(node))
 
-    for target_name, node_list in node_selector.targets.items():
+    for target_name, node_list in node_selector.variables.items():
         print(target_name)
         print(node_list)
 
