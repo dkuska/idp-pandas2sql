@@ -4,7 +4,6 @@ from typing import Optional, Union
 import libcst as cst
 
 
-# @dataclass
 class Node(ABC):
     origin: cst.CSTNode
 
@@ -12,7 +11,6 @@ class Node(ABC):
         self.origin = origin
 
 
-# @dataclass
 class DataFrameNode(Node):
     targets: Optional[list] = None
     values: Optional[Union[dict, list]] = None
@@ -24,8 +22,6 @@ class DataFrameNode(Node):
         self.targets = targets
         self.values = values
 
-
-# @dataclass
 class SQLNode(DataFrameNode):
     sql_str: Optional[str] = None
     con: Optional[str] = None
@@ -39,8 +35,8 @@ class SQLNode(DataFrameNode):
         self.index = self.extract_index(origin)
 
         # DEBUG
-        print(self.sql_str)
-        print(self.con)
+        # print(self.sql_str)
+        # print(self.con)
 
     def extract_sql_str(self, origin: cst.CSTNode) -> str:
         args = self.values['args']
@@ -68,7 +64,6 @@ class SQLNode(DataFrameNode):
         return ""  # TODO: Implement by traversing origin
 
 
-# @dataclass
 class JoinNode(DataFrameNode):
     # parents: Optional[list[cst.CSTNode]] = None  # TODO: Figure out what this could be used for...
     left: Optional[SQLNode] = None
@@ -116,7 +111,6 @@ class JoinNode(DataFrameNode):
         return ""
 
 
-# @dataclass
 class AggregationNode(DataFrameNode):
     parents: Optional[list[cst.CSTNode]] = None
     # TODO: Figure out what we need and how to access it

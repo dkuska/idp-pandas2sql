@@ -51,9 +51,13 @@ class NodeSelector(cst.CSTVisitor):
 
     def visit_Assign(self, node: cst.Assign):
         # Extract information from node
-        targets = []
-        for target in node.targets:
-            targets.append(self.generic_visit(target))
+        if len(node.targets) > 1:
+            targets = []
+            for target in node.targets:
+                targets.append(self.generic_visit(target))
+        else:
+            targets = self.generic_visit(node.targets[0])
+
         values = self.generic_visit(node.value)
         
         # Determine node type
@@ -92,9 +96,10 @@ class NodeSelector(cst.CSTVisitor):
         return {"value": value, "attr": attr}
 
     def visit_AssignTarget(self, node: cst.AssignTarget):
-        ret_targets = []
-        ret_targets.append(self.generic_visit(node.target))
-        return ret_targets
+        # ret_targets = []
+        # ret_targets.append(self.generic_visit(node.target))
+        return self.generic_visit(node.target)
+        # return ret_targets
 
     def visit_Call(self, node: cst.Call):
         func = self.generic_visit(node.func)
