@@ -3,6 +3,11 @@ from typing import Any
 
 import libcst as cst
 
+"""
+Contains helper functions.
+Currently not used, but may be used for inspiration...
+"""
+
 
 def get_Attribute_information(attribute: cst.Attribute) -> tuple:
     value = attribute.value
@@ -49,8 +54,9 @@ def get_ImportAlias_information(import_alias: cst.ImportAlias) -> tuple:
             asname = get_List_values(asname)
         elif isinstance(asname, cst.AsName):
             asname = get_AsName_value(asname)
-            
+
     return import_alias.name.value, asname
+
 
 def get_AsName_value(asname: cst.AsName) -> str:
     asname = asname.name
@@ -60,8 +66,9 @@ def get_AsName_value(asname: cst.AsName) -> str:
         asname = get_Tuple_values(asname)
     elif isinstance(asname, cst.List):
         asname = get_List_values(asname)
-        
+
     return asname
+
 
 def get_List_values(l: cst.List) -> Sequence[Any]:
     # TODO
