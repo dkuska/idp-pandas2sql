@@ -22,9 +22,9 @@ class NodeSelector(cst.CSTVisitor):
         self.pandas_alias: str = ""
         self.pandas_imported_functions: list[str] = []
 
-        self.nodes: list[Node] = []
+        self.nodes: list[Node] = []  # Saves original CST in the original order
 
-        self.dataframes: list[str] = []
+        self.variables = {}
 
         super().__init__()
 
@@ -59,7 +59,7 @@ class NodeSelector(cst.CSTVisitor):
             targets = self.generic_visit(node.targets[0])
 
         values = self.generic_visit(node.value)
-        
+
         # Determine node type
         node_type = {
             "PANDAS_NODE": False,
@@ -86,6 +86,11 @@ class NodeSelector(cst.CSTVisitor):
             this_node = DataFrameNode(origin=node, targets=targets, values=values)
         else:
             this_node = Node(origin=node)
+
+        if targets in self.variables:
+            self.variables[targets].append(this_node)
+        else:
+            self.variables[targets] = [this_node]
 
         self.nodes.append(this_node)
 
@@ -164,7 +169,7 @@ class NodeSelector(cst.CSTVisitor):
         ret_values = []
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
-        return ret_values
+        return tuple(ret_values)
 
     def recursively_visit_value(self, value: dict):
         node_type = {
@@ -192,9 +197,10 @@ class NodeSelector(cst.CSTVisitor):
                 # SQL Node check
                 if key == "attr" and val in PD_SQL:
                     node_type["SQL_NODE"] = True
-                #
+                # Join Node check
                 if key == "attr" and val in PD_JOINS:
                     node_type["JOIN_NODE"] = True
+                # Aggregation Node check
                 if key == "attr" and val in PD_AGGREGATIONS:
                     node_type["AGGREGATION_NODE"] = True
 

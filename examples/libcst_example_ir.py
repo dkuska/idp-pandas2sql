@@ -32,6 +32,10 @@ def main():
     for node in node_selector.nodes:
         print(type(node))
 
+    for target_name, node_list in node_selector.targets.items():
+        print(target_name)
+        print(node_list)
+
 
 if __name__ == "__main__":
     main()

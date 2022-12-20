@@ -22,6 +22,7 @@ class DataFrameNode(Node):
         self.targets = targets
         self.values = values
 
+
 class SQLNode(DataFrameNode):
     sql_str: Optional[str] = None
     con: Optional[str] = None
@@ -39,25 +40,25 @@ class SQLNode(DataFrameNode):
         # print(self.con)
 
     def extract_sql_str(self, origin: cst.CSTNode) -> str:
-        args = self.values['args']
+        args = self.values["args"]
         # Iterate over Arguments to check if it was called as keyword parameter
         for arg in args:
             if isinstance(arg, tuple):
-                keyword_name, keyword_value = arg        
-                if keyword_name == 'sql':
+                keyword_name, keyword_value = arg
+                if keyword_name == "sql":
                     return keyword_value
-        # If this is not the case, return positional argument         
+        # If this is not the case, return positional argument
         return args[0]
 
     def extract_con(self, origin: cst.CSTNode) -> str:
-        args = self.values['args']
+        args = self.values["args"]
         # Iterate over Arguments to check if it was called as keyword parameter
         for arg in args:
             if isinstance(arg, tuple):
-                keyword_name, keyword_value = arg        
-                if keyword_name == 'con':
+                keyword_name, keyword_value = arg
+                if keyword_name == "con":
                     return keyword_value
-        # If this is not the case, return positional argument  
+        # If this is not the case, return positional argument
         return args[1]
 
     def extract_index(self, origin: cst.CSTNode) -> str:
