@@ -3,6 +3,10 @@ from typing import Any
 
 import libcst as cst
 
+""" 
+Contains helper functions.
+Currently not used, but may be used for inspiration...
+"""
 
 def get_Attribute_information(attribute: cst.Attribute) -> tuple:
     value = attribute.value

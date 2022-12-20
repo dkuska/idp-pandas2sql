@@ -24,16 +24,19 @@ s,t = 'abc', 'def'
 def main():
     # Transform source into cst
     src_tree = cst.parse_module(src)
-
+    
     node_selector = NodeSelector()
 
-    # Parse every statement one by one
+    # Parse every statement one by one and save information in NodeSelector
     for statement in src_tree.body:
         statement.visit(node_selector)
 
+    # nodes contain all visited statements in order 
     for node in node_selector.nodes:
         print(type(node))
 
+    # variables contains the assigned variables with their associated nodes
+    # node_list contains multiple items if a variable was assigned multiple values
     for target_name, node_list in node_selector.variables.items():
         print(target_name)
         print(node_list)

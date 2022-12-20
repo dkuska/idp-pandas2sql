@@ -5,6 +5,7 @@ import libcst as cst
 
 
 class Node(ABC):
+    """ Base-Class for all node """
     origin: cst.CSTNode
 
     def __init__(self, origin: cst.CSTNode):
@@ -12,6 +13,16 @@ class Node(ABC):
 
 
 class DataFrameNode(Node):
+    """ Nodes that contain DataFrames, currently not instantiated directly 
+    
+    Args:
+        origin: CSTNode
+        targets: 'left-side' of = sign
+        values: 'right-side' of = sign
+        
+    TODO: Figure out how to extract Index and whether it's SQL based or not    
+    
+    """
     targets: Optional[list] = None
     values: Optional[Union[dict, list]] = None
     sql_based: bool = False
@@ -24,6 +35,12 @@ class DataFrameNode(Node):
 
 
 class SQLNode(DataFrameNode):
+    """ 
+    SQL Based DataFrame
+    Is able to extract SQL string and DB-connection from the values
+    
+    TODO: Support all other arguments of pd.read_sql
+    """
     sql_str: Optional[str] = None
     con: Optional[str] = None
     index: Optional[str] = None
@@ -35,9 +52,6 @@ class SQLNode(DataFrameNode):
         self.con = self.extract_con(origin)
         self.index = self.extract_index(origin)
 
-        # DEBUG
-        # print(self.sql_str)
-        # print(self.con)
 
     def extract_sql_str(self, origin: cst.CSTNode) -> str:
         args = self.values["args"]
@@ -66,6 +80,12 @@ class SQLNode(DataFrameNode):
 
 
 class JoinNode(DataFrameNode):
+    """ 
+    DataFrame created from Joining two DataFrames.
+    Will need access to more than just origin to access the query strings
+    
+    TODO: Needs a bunch of work
+    """
     # parents: Optional[list[cst.CSTNode]] = None  # TODO: Figure out what this could be used for...
     left: Optional[SQLNode] = None
     right: Optional[SQLNode] = None
@@ -113,9 +133,13 @@ class JoinNode(DataFrameNode):
 
 
 class AggregationNode(DataFrameNode):
+    """ 
+    DataFrame created from calling aggregation of SQL based nodess
+    
+    """
     parents: Optional[list[cst.CSTNode]] = None
     # TODO: Figure out what we need and how to access it
 
-    def __init(self, origin, targets, values):
+    def __init__(self, origin, targets, values):
         super().__init__(origin=origin, targets=targets, values=values)
         self.sql_based = True
