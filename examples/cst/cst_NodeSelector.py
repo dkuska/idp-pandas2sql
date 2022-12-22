@@ -101,10 +101,7 @@ class NodeSelector(cst.CSTVisitor):
         return {"value": value, "attr": attr}
 
     def visit_AssignTarget(self, node: cst.AssignTarget):
-        # ret_targets = []
-        # ret_targets.append(self.generic_visit(node.target))
         return self.generic_visit(node.target)
-        # return ret_targets
 
     def visit_Call(self, node: cst.Call):
         func = self.generic_visit(node.func)
@@ -183,7 +180,9 @@ class NodeSelector(cst.CSTVisitor):
             "JOIN_NODE": False,
             "AGGREGATION_NODE": False,
         }
-
+        # Propagation upwards blows up when nesting function calls like this
+        # df = pd.read_sql().join(pd.read_sql())
+        
         for key, val in value.items():
             if isinstance(val, dict):
                 rec_result = self.recursively_visit_value(val)
