@@ -30,8 +30,12 @@ def main():
     # nodes contain all visited statements in order
     for variable, node in node_selector.variables.items():
         print(variable, type(node), end=" ")
-        if isinstance(node, DataFrameNode):
-            print(node.to_code())
+        if isinstance(node, DataFrameNode): 
+            cst_statement = node.to_cst_statement()
+            # print(type(cst_statement))
+            # print(cst_statement)
+            module = cst.Module(body=[cst_statement])
+            print(module.code)
         else:
             print()
 
