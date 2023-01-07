@@ -35,7 +35,7 @@
 
 - Aggregations
   - Welche Aggregationen gibt es ueberhaupt in Pandas?
-    - Min, Max, Mean, Median, 
+    - Min, Max, Mean, Median,
   - Nicht df.aggregate! Die nimmt ein UDF!
   - Bedarf auf jeden Fall die Queries anzufassen und auseinanderzunehmen
 

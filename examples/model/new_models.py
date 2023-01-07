@@ -72,7 +72,7 @@ class JoinNode(DataFrameNode):
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
             left_sql = self.left.node.sql_string
-            left_key = self.left.key.value 
+            left_key = self.left.key.value
         else:
             pass
 
@@ -84,22 +84,22 @@ class JoinNode(DataFrameNode):
         elif isinstance(self.left, SetKeyNode):
             right_set_key = True
             right_sql = self.right.node.sql_string
-            right_key = self.right.key.value # TODO: Implement for more complex types
+            right_key = self.right.key.value  # TODO: Implement for more complex types
         else:
             pass
 
         # Build query string
         if left_set_key or right_set_key:
             # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
-            left_table_alias = 'S1'
-            right_table_alias = 'S2'
+            left_table_alias = "S1"
+            right_table_alias = "S2"
             query_str = f"SELECT * FROM ({left_sql}) AS {left_table_alias} JOIN ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} + {right_table_alias}.{right_key}"
-            
+
         else:
             query_str = f"SELECT * FROM ({left_sql}) JOIN ({right_sql})"
-        
+
         query_str = '"' + query_str + '"'
-            
+
         # Build cst.Assign Object
         if True:
             func = cst.Name(value="read_sql")

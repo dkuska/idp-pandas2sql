@@ -11,8 +11,8 @@
       - Nicht alle Parameter von Joins werden unbedingt unterstuetzt von uns
       - Moeglicherweise SortingNodes
       - Notiz, dass Nodes geloescht werden koennen, wenn sie nicht mehr benotigt wird
-      - Linting ausfuehren zum Loeschen von Nodes? Toter Code mit PyClean 
-    
+      - Linting ausfuehren zum Loeschen von Nodes? Toter Code mit PyClean
+
     - Naechste Implementierungsschritte
       - Bessere NodeType-Selektion/Node-Erstellung - Abdu und Tobi
       - Entwicklung Node-Hierarchie - Abdu und Tobi
