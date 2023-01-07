@@ -18,13 +18,12 @@ class PandasNodeSelector(cst.CSTVisitor):
     These nodes will then be passed to the IR
     """
 
-    def __init__(self, pandas_star_imported: bool = True, 
-                 pandas_aliases: list[str] = ["pandas"], 
-                 imported_pandas_aliases: list[cst.ImportAlias] = []) -> None:
-        
-        self.pandas_star_imported: bool = pandas_star_imported  # TODO: use this in code
+    def __init__(self, pandas_star_imported: bool,
+                 pandas_aliases: list[str],
+                 imported_pandas_aliases: list[cst.ImportAlias]):
+        self.pandas_star_imported: bool = pandas_star_imported 
         self.pandas_aliases = pandas_aliases
-        self.imported_pandas_aliases: imported_pandas_aliases
+        self.imported_pandas_aliases = imported_pandas_aliases
 
         self.variables: dict[str, Node] = {}
 
@@ -55,7 +54,6 @@ class PandasNodeSelector(cst.CSTVisitor):
             self.variables[target_name] = value_node
 
     def is_imported_from_pandas(self, func_name: str) -> bool:
-        # TODO: Actually use this
         all_pandas_aliases = [
             alias.evaluated_alias if alias.evaluated_alias else alias.evaluated_name
             for alias in self.imported_pandas_aliases

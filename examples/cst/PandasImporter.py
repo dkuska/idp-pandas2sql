@@ -6,7 +6,7 @@ class PandasImporter(cst.CSTVisitor):
     """
 
     def __init__(self) -> None:
-        self.pandas_imported: bool = False
+        self.pandas_imported: bool = False  # TODO: Detect this....
         self.pandas_star_imported: bool = True  # TODO: use this in code
         self.pandas_aliases = ["pandas"]
         self.imported_pandas_aliases: list[cst.ImportAlias] = []
@@ -18,8 +18,11 @@ class PandasImporter(cst.CSTVisitor):
 
         for imported_module in imported_modules:
             if imported_module.evaluated_name != "pandas":
+                print("Not Pandas: ", end=" ")
+                print(imported_module.evaluated_name)
                 continue
             if imported_module.evaluated_alias:
+                self.pandas_imported = True
                 self.pandas_aliases.append(imported_module.evaluated_alias)
 
     def visit_ImportFrom(self, node: cst.ImportFrom):

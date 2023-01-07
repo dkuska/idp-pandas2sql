@@ -1,9 +1,10 @@
 import libcst as cst
-from ..model.new_models import DataFrameNode
-from NodeReplacer import NodeReplacer
-from PandasImporter import PandasImporter
-from PandasNodeSelector import PandasNodeSelector
-from PandasOptimizer import PandasOptimizer
+
+# from cst.NodeReplacer import NodeReplacer
+from cst.PandasImporter import PandasImporter
+from cst.PandasNodeSelector import PandasNodeSelector
+# from cst.PandasOptimizer import PandasOptimizer
+from model.new_models import DataFrameNode
 
 src = """
 import numpy
@@ -32,18 +33,21 @@ class Orchestrator():
         # self.node_replacer = NodeReplacer()
         
         
-    def transform(src: str) -> str:
+    def transform(self, src: str) -> str:
         # Transform into CST
         src_tree = cst.parse_module(src)
         # Check with PandasImporter
         pandas_importer = PandasImporter()
         src_tree.visit(pandas_importer)
         
+        print(pandas_importer.pandas_imported)
+        
         # Create NodeSelector with information from PandasImporter
         if pandas_importer.pandas_imported:
-            pandas_node_selector = PandasNodeSelector(pandas_importer.pandas_star_imported,
-                                               pandas_importer.pandas_aliases,
-                                               pandas_importer.imported_pandas_aliases)
+            pandas_node_selector = PandasNodeSelector(pandas_star_imported = pandas_importer.pandas_star_imported,
+                                               pandas_aliases = pandas_importer.pandas_aliases,
+                                               imported_pandas_aliases = pandas_importer.imported_pandas_aliases)
+            
             src_tree.visit(pandas_node_selector)
             
             # DEBUG
@@ -60,23 +64,19 @@ class Orchestrator():
                     print()
             
             
-            # Create PandasOptimizer with information from NodeSelector
-            pandas_optimizer = PandasOptimizer(pandas_node_selector.variables)
-            pandas_optimizer.optimize()
-            old_nodes_new_nodes = pandas_optimizer.get_optimized_nodes()
+            # # Create PandasOptimizer with information from NodeSelector
+            # pandas_optimizer = PandasOptimizer(pandas_node_selector.variables)
+            # pandas_optimizer.optimize()
+            # old_nodes_new_nodes = pandas_optimizer.get_optimized_nodes()
             
-            # Create new tree with old_nodes_new_nodes
-            node_replacer = NodeReplacer()
-            new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
+            # # Create new tree with old_nodes_new_nodes
+            # node_replacer = NodeReplacer()
+            # new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
         
-            # Export new_code
-            new_src = new_tree.code
+            # # Export new_code
+            # new_src = new_tree.code
 
-            return new_src
-
-        
-        pass
-    
+            # return new_src
 
 def main():
     orchestrator = Orchestrator()
