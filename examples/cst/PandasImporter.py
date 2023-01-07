@@ -30,6 +30,7 @@ class PandasImporter(cst.CSTVisitor):
         if imported_module_name != "pandas":
             return
 
+        self.pandas_imported = True
         # if it is an import star
         if isinstance(node.names, cst.ImportStar):
             self.pandas_star_imported = True

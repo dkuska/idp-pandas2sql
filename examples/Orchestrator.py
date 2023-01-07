@@ -40,24 +40,18 @@ class Orchestrator():
         pandas_importer = PandasImporter()
         src_tree.visit(pandas_importer)
         
-        print(pandas_importer.pandas_imported)
-        
         # Create NodeSelector with information from PandasImporter
         if pandas_importer.pandas_imported:
             pandas_node_selector = PandasNodeSelector(pandas_star_imported = pandas_importer.pandas_star_imported,
                                                pandas_aliases = pandas_importer.pandas_aliases,
                                                imported_pandas_aliases = pandas_importer.imported_pandas_aliases)
-            
             src_tree.visit(pandas_node_selector)
             
             # DEBUG
-            # nodes contain all visited statements in order
             for variable, node in pandas_node_selector.variables.items():
                 print(variable, type(node), end=" ")
                 if isinstance(node, DataFrameNode):
                     cst_statement = node.to_cst_statement(variable)
-                    # print(type(cst_statement))
-                    # print(cst_statement)
                     module = cst.Module(body=[cst_statement])
                     print(module.code)
                 else:
