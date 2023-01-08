@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from collections import OrderedDict
 from typing import Union
 
 import libcst as cst
@@ -6,8 +7,8 @@ from libcst import CSTNode
 from model.new_models import DataFrameNode, IRNode, JoinNode, SetKeyNode, SQLNode
 
 # TODO: Actually use these
-PANDAS_FUNCTIONS_RETURNING_DATAFRAME = ["read_sql"]
-DATAFRAME_ATTRIBUTES_RETURNING_DATAFRAME = ["join", "aggregate"]
+# PANDAS_FUNCTIONS_RETURNING_DATAFRAME = ["read_sql"]
+# DATAFRAME_ATTRIBUTES_RETURNING_DATAFRAME = ["join", "aggregate"]
 
 Node = Union[CSTNode, IRNode]
 
@@ -25,7 +26,8 @@ class PandasNodeSelector(cst.CSTVisitor):
         self.pandas_aliases = pandas_aliases
         self.imported_pandas_aliases = imported_pandas_aliases
 
-        self.variables: dict[str, Node] = {}
+        self.variables: OrderedDict[str, Node] = OrderedDict()
+        self.interesting_nodes: OrderedDict[CSTNode, Node] = OrderedDict()
 
         super().__init__()
 
@@ -46,12 +48,24 @@ class PandasNodeSelector(cst.CSTVisitor):
 
     def visit_Assign(self, node: cst.Assign):
         if isinstance(node.value, tuple):
-            pass  # if targets and value are tuples do more complicated stuff
+            pass  # TODO: if targets and value are tuples do more complicated stuff
 
         value_node = self.generic_visit(node.value)
         for target_node in node.targets:
             target_name = target_node.target.value
             self.variables[target_name] = value_node
+            
+        if self.is_interesting(node):
+            self.interesting_nodes[node] = value_node
+
+    def visit_Expr(self, node: cst.Expr):
+        value_node = self.generic_visit(node.value)
+        
+        if self.is_interesting(node):
+            self.interesting_nodes[node] = value_node
+
+    def is_interesting(self, node: cst.CSTNode) -> bool:
+        return True  # TODO: Actually implement this....
 
     def is_imported_from_pandas(self, func_name: str) -> bool:
         all_pandas_aliases = [

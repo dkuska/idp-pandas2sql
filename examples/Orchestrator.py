@@ -40,6 +40,10 @@ class Orchestrator():
         pandas_importer = PandasImporter()
         src_tree.visit(pandas_importer)
         
+        # print(pandas_importer.pandas_star_imported)
+        # print(pandas_importer.pandas_aliases)
+        # print(pandas_importer.imported_pandas_aliases)
+        
         # Create NodeSelector with information from PandasImporter
         if pandas_importer.pandas_imported:
             pandas_node_selector = PandasNodeSelector(pandas_star_imported = pandas_importer.pandas_star_imported,
@@ -49,15 +53,25 @@ class Orchestrator():
             
             # DEBUG
             for variable, node in pandas_node_selector.variables.items():
-                print(variable, type(node), end=" ")
+                print(variable, type(node))
                 if isinstance(node, DataFrameNode):
                     cst_statement = node.to_cst_statement(variable)
                     module = cst.Module(body=[cst_statement])
                     print(module.code)
                 else:
                     print()
+                    
+            for variable, node in pandas_node_selector.interesting_nodes.items():
+                print(type(variable), type(node))
+                if isinstance(node, DataFrameNode):
+                    print(node)
+                    # cst_statement = node.to_cst_statement(variable)
+                    # module = cst.Module(body=[cst_statement])
+                    # print(module.code)
+                else:
+                    print()
             
-            
+            print(len(pandas_node_selector.variables))
             # # Create PandasOptimizer with information from NodeSelector
             # pandas_optimizer = PandasOptimizer(pandas_node_selector.variables)
             # pandas_optimizer.optimize()
@@ -75,7 +89,7 @@ class Orchestrator():
 def main():
     orchestrator = Orchestrator()
     new_src = orchestrator.transform(src)
-    print(new_src)
+    # print(new_src)
 
 
 if __name__ == "__main__":

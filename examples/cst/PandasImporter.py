@@ -18,8 +18,6 @@ class PandasImporter(cst.CSTVisitor):
 
         for imported_module in imported_modules:
             if imported_module.evaluated_name != "pandas":
-                print("Not Pandas: ", end=" ")
-                print(imported_module.evaluated_name)
                 continue
             if imported_module.evaluated_alias:
                 self.pandas_imported = True
