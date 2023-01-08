@@ -130,7 +130,7 @@ class SetKeyNode(DataFrameNode):
     def to_code(self):
         return f"({self.node.to_code()}).set_key({self.key.value})"
 
-    def to_cst_node(self):
+    def to_cst_node(self, target):
         func = cst.Attribute(value=self.node.to_cst_statement(), attr="join")
         args = [cst.Arg(value=self.key)]
 

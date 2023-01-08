@@ -1,27 +1,27 @@
 import libcst as cst
-from PandasOptimizer import PandasOptimizer
 
 
 class NodeReplacer():
     def __init__(self) -> None:
         pass
     
-    def replace(src_tree: cst.Module, old_new_nodes) -> cst.Module:
-        new_tree = src_tree.deep_clone()
+    def replace(self, src_tree: cst.Module, old_new_nodes) -> cst.Module:
         new_tree_body = []
         for src_node in src_tree.body:
             node_replaced = False
             node_replacement = None
-            for old_node, new_node in old_new_nodes:
-                if src_node == old_node:
-                    node_replaced = True
-                    node_replacement = new_node
+            
+            if src_node.body[0] in old_new_nodes:
+                node_replaced = True
+                node_replacement = old_new_nodes[src_node.body[0]]
+                
+                if node_replacement is None:
+                    print('Why tf is this none?!')
+                    node_replaced = False
                     
             if node_replaced:
                 new_tree_body.append(node_replacement)
             else:
                 new_tree_body.append(src_node)
-        
-        new_tree.body = new_tree_body
-        
-        return new_tree
+    
+        return cst.Module(body=new_tree_body, header=src_tree.header, footer=src_tree.footer)
