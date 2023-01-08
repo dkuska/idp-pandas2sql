@@ -16,7 +16,6 @@ class NodeReplacer():
                 node_replacement = old_new_nodes[src_node.body[0]]
                 
                 if node_replacement is None:
-                    print('Why tf is this none?!')
                     node_replaced = False
                     
             if node_replaced:

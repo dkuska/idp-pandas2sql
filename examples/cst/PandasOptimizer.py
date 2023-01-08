@@ -29,7 +29,7 @@ class PandasOptimizer():
                     if IRNode == value:
                         new_node = IRNode.to_cst_statement(target)
                   
-            if old_node != new_node:
+            if old_node != new_node and new_node is not None:
                 self.optimized_nodes[old_node] = new_node
     
     def get_optimized_nodes(self):

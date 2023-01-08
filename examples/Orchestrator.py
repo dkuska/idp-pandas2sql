@@ -60,8 +60,12 @@ class Orchestrator():
             return new_src
 
 def main():
+    print("Old Source:")
+    print(src)
+    
     orchestrator = Orchestrator()
     new_src = orchestrator.transform(src)
+    print("New Source:")
     print(new_src)
 
 
