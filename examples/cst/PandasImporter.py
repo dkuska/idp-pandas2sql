@@ -2,7 +2,8 @@ import libcst as cst
 
 class PandasImporter(cst.CSTVisitor):
     """
-    Traverses Tree, detects if pandas was imported and saves
+    Traverses Tree, detects if pandas was imported and saves what was imported and how it is adressed.
+    Is pretty much a direct copy of the import features from the old cst_NodeSelector.
     """
 
     def __init__(self) -> None:

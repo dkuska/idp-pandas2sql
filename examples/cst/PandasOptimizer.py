@@ -3,16 +3,18 @@ from model.new_models import IRNode, DataFrameNode, SQLNode, JoinNode, SetKeyNod
 from collections import OrderedDict
 
 class PandasOptimizer():
-    
+    """
+    At the moment this is not much more than a stub...
+    Ideally, I'd like the creation of the IR to take place here.
+    However we need to evaluate how this can be done without this being another cst.NodeVisitor...
+    The information saved in self.variables and self.interesting_nodes are super, super redundant...
+    Passing both are required, because the IR-Nodes don't currently have a reference to their target.
+    """
     def __init__(self, variables, interesting_nodes) -> None:
         self.variables = variables
         self.interesting_nodes = interesting_nodes
-        
         self.optimized_nodes = OrderedDict()
-        
         self.create_IR()
-        self.optimize()
-        self.map_old_to_new_nodes()
         
     def create_IR(self):
         pass
@@ -21,6 +23,10 @@ class PandasOptimizer():
         pass
     
     def map_old_to_new_nodes(self):
+        """
+        This is super stupid... 
+        It is mostly required, because self.variables saves the reference to the target, which is needed for to_cst_statement
+        """
         for old_node, IRNode in self.interesting_nodes.items():
             # Woohoo, we can do something here...
             new_node = None 

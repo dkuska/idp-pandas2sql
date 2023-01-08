@@ -15,8 +15,21 @@ Node = Union[CSTNode, IRNode]
 
 class PandasNodeSelector(cst.CSTVisitor):
     """
-    Traverses Tree, detects if pandas was imported and saves relevant nodes.
-    These nodes will then be passed to the IR
+    Traverses Tree and saves relevant nodes.
+    These nodes will then be passed to the IR.
+    
+    This is a direct copy of the functions of cst_NodeSelector, that are not related to the imports.
+    
+    Pretty much the only addition is self.interesting_nodes
+    This is a dict, that maps the original CSTNode to the IRNodes.
+    This is done, because the IRNodes do not keep a reference to the original CSTNode
+    
+    Additionally a visit_Expr was added, so that we can detect inplace operations on DataFrames such as
+    `df.set_index(key, inplace=True)`
+    
+    TODO: Would be nice, if this would ONLY implement the `is_interesting(node)` functionality and the creation of the IR would take place in the Optimizer
+    
+    
     """
 
     def __init__(self, pandas_star_imported: bool,
