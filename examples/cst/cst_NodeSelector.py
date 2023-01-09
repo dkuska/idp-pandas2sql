@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import Optional, Tuple, Union
 
 import libcst as cst
+from attr import attr
 from input.inputModule import InputModule
 from input.pandas import PandasInput
 from libcst import CSTNode
@@ -11,7 +12,9 @@ input_modules = [
     PandasInput(),
 ]
 
-Node = Union[CSTNode, Tuple[IRNode, InputModule]]
+module_by_name = {module.module_name: module for module in input_modules}
+
+Node = Union[CSTNode, IRNode]
 
 
 class NodeSelector(cst.CSTVisitor):
@@ -101,33 +104,38 @@ class NodeSelector(cst.CSTVisitor):
 
         result = None
 
-        if isinstance(node.func, cst.Name):
+        if isinstance(node.func, cst.Name):  # calls to directly imported library function. e.g. read_sql
             func_alias = node.func.value
             if func_alias not in self.library_methods:
                 return
             module, func_name = self.library_methods[func_alias]
-            result = module.visit_call(func_name, args, kwargs)
+            result = self.call_module_method(module, func_name, args, kwargs)
 
         elif isinstance(node.func, cst.Attribute):
             attribute = self.generic_visit(node.func.value)
 
-            if isinstance(attribute, cst.Name):
+            if isinstance(attribute, cst.Name):  # calls to function accessed via module. e.g. pd.read_sql
                 if attribute.value not in self.libraries:
                     return
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
-                result = module.visit_call(func_name, args, kwargs)
-            elif isinstance(attribute, Tuple):
+                result = self.call_module_method(module, func_name, args, kwargs)
+            elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
                 func_name = node.func.attr.value
-                node, module = attribute
-                result = module.visit_call_on_ir_node(node, func_name, args, kwargs)
+                node = attribute
+                module = module_by_name[node.library]
+                result = self.call_module_ir_method(module, node, func_name, args, kwargs)
+            else:
+                print("Warning: Something strange got called: ", attribute)
 
         if result:
-            return (result, module)
+            return result
 
     def call_module_method(self, module: InputModule, func_name: str, args: list, kwargs: dict) -> Node:
         result = module.visit_call(func_name, args, kwargs)
         if result:
+            if not result.library:
+                result.library = module.module_name
             return result
         raise NotImplementedError(f"Rewrite rule for '{func_name}' of '{module.module_name}' is not implemented.")
 
@@ -136,6 +144,8 @@ class NodeSelector(cst.CSTVisitor):
     ) -> Node:
         result = module.visit_call_on_ir_node(ir_node, func_name, args, kwargs)
         if result:
+            if not result.library:
+                result.library = module.module_name
             return result
         raise NotImplementedError(
             f"Rewrite rule for '{func_name}' on IR object for '{module.module_name}' is not implemented."
@@ -143,11 +153,7 @@ class NodeSelector(cst.CSTVisitor):
 
     def parse_Name(self, node: cst.Name) -> Optional[Node]:
         if node.value in self.variables:
-            value = self.variables[node.value]
-            if isinstance(value, Tuple):
-                return self.variables[node.value][0]
-            else:
-                return value
+            return self.variables[node.value]
         return node
 
     def parse_NonKwArg(self, node: cst.Arg) -> Node:

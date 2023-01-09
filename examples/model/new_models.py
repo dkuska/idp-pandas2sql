@@ -4,8 +4,9 @@ from libcst import CSTNode
 
 
 class IRNode(ABC):
-    def __init__(self, parent=None, *args, **kwargs):
+    def __init__(self, parent=None, library=None, *args, **kwargs):
         self.parent = parent
+        self.library = library
         if args or kwargs:
             print(f"These args: {args} and kwargs: {list(kwargs.keys())} don't have a translation rule yet")
 
