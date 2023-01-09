@@ -1,14 +1,17 @@
 from collections.abc import Sequence
-from typing import Union
+from typing import Optional, Tuple, Union
 
 import libcst as cst
+from input.inputModule import InputModule
+from input.pandas import PandasInput
 from libcst import CSTNode
 from model.new_models import DataFrameNode, IRNode, JoinNode, SetKeyNode, SQLNode
 
-PANDAS_FUNCTIONS_RETURNING_DATAFRAME = ["read_sql"]
-DATAFRAME_ATTRIBUTES_RETURNING_DATAFRAME = ["join", "aggregate"]
+input_modules = [
+    PandasInput(),
+]
 
-Node = Union[CSTNode, IRNode]
+Node = Union[CSTNode, Tuple[IRNode, InputModule]]
 
 
 class NodeSelector(cst.CSTVisitor):
@@ -18,23 +21,25 @@ class NodeSelector(cst.CSTVisitor):
     """
 
     def __init__(self) -> None:
-        self.pandas_imported: bool = False
-        self.pandas_star_imported: bool = True  # TODO: use this in code
-        self.pandas_aliases = ["pandas"]
-        self.imported_pandas_aliases: list[cst.ImportAlias] = []
 
         self.variables: dict[str, Node] = {}
+        """Maps the library names in namespace to the responsible InputModule"""
+        self.libraries: dict[str, InputModule] = {}
+        """Maps the method names in namespace to the responsible InputModule and the original method name."""
+        self.library_methods: dict[str, Tuple[InputModule, str]] = {}
 
         super().__init__()
 
     def generic_visit(self, cst_node: CSTNode) -> Node:
         class_name = str(cst_node.__class__.__name__).replace("CST", "")
-        method_name = f"visit_{class_name}"
+        method_name = f"parse_{class_name}"
 
         if not hasattr(self, method_name):
-            raise NotImplementedError(
-                f"Function is not defined for: {method_name}"
-            )  # but actually they are all implemented in the base class as empty methods, right?
+            # raise NotImplementedError(
+            #     f'No way to parse CST Node of type "{class_name}"'
+            # )  # but actually they are all implemented in the base class as empty methods, right?
+            print(f'Warning: No way to parse CST Node of type "{class_name}"')
+            return cst_node
 
         method = getattr(self, method_name)
         ir_node = method(cst_node)
@@ -46,23 +51,38 @@ class NodeSelector(cst.CSTVisitor):
         imported_modules = list(node.names)
 
         for imported_module in imported_modules:
-            if imported_module.evaluated_name != "pandas":
-                continue
-            if imported_module.evaluated_alias:
-                self.pandas_aliases.append(imported_module.evaluated_alias)
+            for input_module in input_modules:
+                if imported_module.evaluated_name != input_module.module_name:
+                    continue
+                alias = imported_module.evaluated_alias or imported_module.evaluated_name
+                self.libraries[alias] = input_module
+                break
+
+        return False
 
     def visit_ImportFrom(self, node: cst.ImportFrom):
         imported_module_name = node.module.value
-        if imported_module_name != "pandas":
-            return
 
-        # if it is an import star
-        if isinstance(node.names, cst.ImportStar):
-            self.pandas_star_imported = True
-            return
+        for input_module in input_modules:
+            if imported_module_name != input_module.module_name:
+                continue
 
-        imported_elements = list(node.names)
-        self.imported_pandas_aliases.extend(imported_elements)
+            # if it is an import star
+            if isinstance(node.names, cst.ImportStar):
+                # Todo: add all pandas symbols
+                symbols = input_module.all_symbol_names
+                imported_elements = [(symbol, symbol) for symbol in symbols]
+            else:
+                imported_elements = [
+                    (alias.evaluated_alias or alias.evaluated_name, alias.evaluated_name) for alias in node.names
+                ]
+
+            for imported_element in imported_elements:
+                self.library_methods[imported_element[0]] = (input_module, imported_element[1])
+
+            break
+
+        return False
 
     def visit_Assign(self, node: cst.Assign):
         if isinstance(node.value, tuple):
@@ -73,66 +93,75 @@ class NodeSelector(cst.CSTVisitor):
             target_name = target_node.target.value
             self.variables[target_name] = value_node
 
-    def is_imported_from_pandas(self, func_name: str) -> bool:
-        all_pandas_aliases = [
-            alias.evaluated_alias if alias.evaluated_alias else alias.evaluated_name
-            for alias in self.imported_pandas_aliases
-        ]
+        return False
 
-        return func_name in all_pandas_aliases
+    def parse_Call(self, node: cst.Call) -> Optional[Node]:
+        args = list(self.parse_NonKwArg(arg) for arg in node.args if not arg.keyword)
+        kwargs = dict(self.parse_KwArg(arg) for arg in node.args if arg.keyword)
 
-    def original_function_name(self, name: str) -> str:
-        for alias in self.imported_pandas_aliases:
-            if alias.evaluated_alias == name:
-                return alias.evaluated_name
-        return name
-
-    def create_ir_node_for(self, func_name: str, args: list, kwargs: dict) -> IRNode:
-        if func_name == "read_sql":
-            return SQLNode(*args, **kwargs)
-        if func_name == "join":
-            return JoinNode(*args, **kwargs)
-        if func_name == "set_index":
-            return SetKeyNode(*args, **kwargs)
-
-        raise NotImplementedError(f"Rewrite rule for {func_name} is not implemented")
-
-    def visit_Call(self, node: cst.Call):
-        args = list(self.generic_visit(arg) for arg in node.args if not arg.keyword)
-        kwargs = dict(self.generic_visit(arg) for arg in node.args if arg.keyword)
+        result = None
 
         if isinstance(node.func, cst.Name):
-            func_name = node.func.value
-            if self.is_imported_from_pandas(func_name):
-                return self.create_ir_node_for(func_name, args, kwargs)
+            func_alias = node.func.value
+            if func_alias not in self.library_methods:
+                return
+            module, func_name = self.library_methods[func_alias]
+            result = module.visit_call(func_name, args, kwargs)
 
-        if isinstance(node.func, cst.Attribute):
+        elif isinstance(node.func, cst.Attribute):
             attribute = self.generic_visit(node.func.value)
-            if isinstance(attribute, cst.Name):
-                if attribute.value in self.pandas_aliases:
-                    func_name = node.func.attr.value
-                    return self.create_ir_node_for(func_name, args, kwargs)
-            if isinstance(attribute, DataFrameNode):
-                func_name = node.func.attr.value
-                return self.create_ir_node_for(func_name, [attribute] + args, kwargs)
 
-    def visit_Name(self, node: cst.Name):
+            if isinstance(attribute, cst.Name):
+                if attribute.value not in self.libraries:
+                    return
+                module = self.libraries[attribute.value]
+                func_name = node.func.attr.value
+                result = module.visit_call(func_name, args, kwargs)
+            elif isinstance(attribute, Tuple):
+                func_name = node.func.attr.value
+                node, module = attribute
+                result = module.visit_call_on_ir_node(node, func_name, args, kwargs)
+
+        if result:
+            return (result, module)
+
+    def call_module_method(self, module: InputModule, func_name: str, args: list, kwargs: dict) -> Node:
+        result = module.visit_call(func_name, args, kwargs)
+        if result:
+            return result
+        raise NotImplementedError(f"Rewrite rule for '{func_name}' of '{module.module_name}' is not implemented.")
+
+    def call_module_ir_method(
+        self, module: InputModule, ir_node: IRNode, func_name: str, args: list, kwargs: dict
+    ) -> Node:
+        result = module.visit_call_on_ir_node(ir_node, func_name, args, kwargs)
+        if result:
+            return result
+        raise NotImplementedError(
+            f"Rewrite rule for '{func_name}' on IR object for '{module.module_name}' is not implemented."
+        )
+
+    def parse_Name(self, node: cst.Name) -> Optional[Node]:
         if node.value in self.variables:
-            return self.variables[node.value]
+            value = self.variables[node.value]
+            if isinstance(value, Tuple):
+                return self.variables[node.value][0]
+            else:
+                return value
         return node
 
-    def visit_Arg(self, node: cst.Arg):
+    def parse_NonKwArg(self, node: cst.Arg) -> Node:
         arg_value = self.generic_visit(node.value)
-
-        if node.keyword:
-            arg_keyword = self.generic_visit(node.keyword)
-            return arg_keyword.value, arg_value
         return arg_value
 
-    def visit_Element(self, node: cst.Element):
+    def parse_KwArg(self, node: cst.Arg) -> Tuple[str, Node]:
+        arg_value = self.generic_visit(node.value)
+        return node.keyword.value, arg_value
+
+    def parse_Element(self, node: cst.Element) -> Optional[Node]:
         return self.generic_visit(node.value)
 
-    def visit_Tuple(self, node: cst.Tuple) -> Sequence:
+    def parse_Tuple(self, node: cst.Tuple) -> Sequence:
         ret_values = []
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
