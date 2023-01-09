@@ -12,7 +12,6 @@ class PandasInput(InputModule):
             return SQLNode(*args, **kwargs)
 
     def visit_call_on_ir_node(self, ir_node: IRNode, func_name: str, args: list, kwargs: dict):
-        print("CALLIR", ir_node, func_name, args, kwargs)
         if func_name == "join":
             return JoinNode(ir_node, *args, **kwargs)
         if func_name == "set_index":
