@@ -67,24 +67,24 @@ class JoinNode(DataFrameNode):
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
-            left_sql = self.left.sql_string
+            left_sql = self.left.sql_string.replace('"', '')
             pass
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
-            left_sql = self.left.node.sql_string
-            left_key = self.left.key.value
+            left_sql = self.left.node.sql_string.replace('"', '')
+            left_key = self.left.key.value.replace('"', '').replace("'", "")
         else:
             pass
 
         # Extract query and additional information from right node
         right_set_key = False
         if isinstance(self.left, SQLNode):
-            right_sql = self.right.sql_string
+            right_sql = self.right.sql_string.replace('"', '')
             pass
         elif isinstance(self.left, SetKeyNode):
             right_set_key = True
-            right_sql = self.right.node.sql_string
-            right_key = self.right.key.value  # TODO: Implement for more complex types
+            right_sql = self.right.node.sql_string.replace('"', '')
+            right_key = self.right.key.value.replace('"', '').replace("'", "")  # TODO: Implement for more complex types
         else:
             pass
 
