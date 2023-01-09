@@ -54,36 +54,31 @@ class NodeSelector(cst.CSTVisitor):
         imported_modules = list(node.names)
 
         for imported_module in imported_modules:
-            for input_module in input_modules:
-                if imported_module.evaluated_name != input_module.module_name:
-                    continue
-                alias = imported_module.evaluated_alias or imported_module.evaluated_name
-                self.libraries[alias] = input_module
-                break
+            if imported_module.evaluated_name not in module_by_name:
+                continue
+            input_module = module_by_name[imported_module.evaluated_name]
+            alias = imported_module.evaluated_alias or imported_module.evaluated_name
+            self.libraries[alias] = input_module
 
         return False
 
     def visit_ImportFrom(self, node: cst.ImportFrom):
         imported_module_name = node.module.value
+        if imported_module_name not in module_by_name:
+            return False
+        input_module = module_by_name[imported_module_name]
 
-        for input_module in input_modules:
-            if imported_module_name != input_module.module_name:
-                continue
+        if isinstance(node.names, cst.ImportStar):
+            # Todo: add all pandas symbols
+            symbols = input_module.all_symbol_names
+            imported_elements = [(symbol, symbol) for symbol in symbols]
+        else:
+            imported_elements = [
+                (alias.evaluated_alias or alias.evaluated_name, alias.evaluated_name) for alias in node.names
+            ]
 
-            # if it is an import star
-            if isinstance(node.names, cst.ImportStar):
-                # Todo: add all pandas symbols
-                symbols = input_module.all_symbol_names
-                imported_elements = [(symbol, symbol) for symbol in symbols]
-            else:
-                imported_elements = [
-                    (alias.evaluated_alias or alias.evaluated_name, alias.evaluated_name) for alias in node.names
-                ]
-
-            for imported_element in imported_elements:
-                self.library_methods[imported_element[0]] = (input_module, imported_element[1])
-
-            break
+        for imported_element in imported_elements:
+            self.library_methods[imported_element[0]] = (input_module, imported_element[1])
 
         return False
 
