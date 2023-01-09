@@ -93,7 +93,7 @@ class JoinNode(DataFrameNode):
             # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
             left_table_alias = "S1"
             right_table_alias = "S2"
-            query_str = f"SELECT * FROM ({left_sql}) AS {left_table_alias} JOIN ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} + {right_table_alias}.{right_key}"
+            query_str = f"SELECT * FROM ({left_sql}) AS {left_table_alias} JOIN ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
 
         else:
             query_str = f"SELECT * FROM ({left_sql}) JOIN ({right_sql})"
