@@ -1,6 +1,6 @@
 import time
 import warnings
-from abc import ABC, abstractstaticmethod
+from abc import ABC, abstractproperty, abstractstaticmethod
 from math import isclose
 from typing import NamedTuple
 
@@ -53,7 +53,7 @@ class Evaluator(ABC):
         print(f"optimized code execution time: {optimized_execution_time}")
 
     def evaluate(self):
-        print(f"Evaluating {self.__class__.__name__}:")
+        print(f"Evaluating {self.name}:")
         unoptimized_results = self.evaluate_function(self.unoptimized_function)
         optimized_results = self.evaluate_function(self.optimized_function)
         self.evaluate_correctness(unoptimized_results.results, optimized_results.results)
@@ -68,8 +68,16 @@ class Evaluator(ABC):
     def optimized_function(db_config: PostgresConfig):
         pass  # can be later replaced with Optimizer(self.unoptimized_function)
 
+    @abstractproperty
+    def name(self):
+        pass
+
 
 class LineItemOrdersJoinEvaluator(Evaluator):
+    @property
+    def name(self):
+        return "Lineitems Join Orders"
+
     @staticmethod
     def unoptimized_function(db_config: PostgresConfig):
         with PostgresConnection(db_config) as conn:
@@ -91,6 +99,10 @@ class LineItemOrdersJoinEvaluator(Evaluator):
 
 
 class PartsuppPartJoinEvaluator(Evaluator):
+    @property
+    def name(self):
+        return "Partsupps Join Parts"
+
     @staticmethod
     def unoptimized_function(db_config: PostgresConfig):
         with PostgresConnection(db_config) as conn:
@@ -112,6 +124,10 @@ class PartsuppPartJoinEvaluator(Evaluator):
 
 
 class L_DiscountMaxEvaluator(Evaluator):
+    @property
+    def name(self):
+        return "Max Discount of Lineitems"
+
     @staticmethod
     def unoptimized_function(db_config: PostgresConfig):
         with PostgresConnection(db_config) as conn:
@@ -125,6 +141,10 @@ class L_DiscountMaxEvaluator(Evaluator):
 
 
 class O_TotalPriceSumEvaluator(Evaluator):
+    @property
+    def name(self):
+        return "Sum Totalprice Orders"
+
     @staticmethod
     def unoptimized_function(db_config: PostgresConfig):
         with PostgresConnection(db_config) as conn:
