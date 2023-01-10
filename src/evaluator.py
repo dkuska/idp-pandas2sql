@@ -33,8 +33,8 @@ class Evaluator(ABC):
     def evaluate_correctness(self, unoptimized_results, optimized_results):
         are_equal = False
         if isinstance(unoptimized_results, pandas.DataFrame):
-            # if unoptimized_results.equals(optimized_results):
-            if unoptimized_results[~unoptimized_results.apply(tuple, 1).isin(optimized_results.apply(tuple, 1))].empty:
+            if unoptimized_results.equals(optimized_results):
+            # if unoptimized_results[~unoptimized_results.apply(tuple, 1).isin(optimized_results.apply(tuple, 1))].empty:
                 are_equal = True
         elif isinstance(unoptimized_results, float):
             if isclose(unoptimized_results, optimized_results, rel_tol=1e-09, abs_tol=0.0):
