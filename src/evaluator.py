@@ -81,9 +81,9 @@ class LineItemOrdersJoinEvaluator(Evaluator):
     @staticmethod
     def unoptimized_function(db_config: PostgresConfig):
         with PostgresConnection(db_config) as conn:
-            line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn)
-            orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn)
-            return pandas.merge(line_items, orders, left_on="l_orderkey", right_on="o_orderkey", how="left")
+            line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn) # 13.25s 96MB
+            orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn) # 3.21 24MB
+            return pandas.merge(line_items, orders, left_on="l_orderkey", right_on="o_orderkey", how="left") # 1.06s 240MB
             # return pandas.merge(line_items, orders, on="orderkey", suffixes=("l_", "o_"), how="left")
 
     @staticmethod
@@ -95,7 +95,7 @@ class LineItemOrdersJoinEvaluator(Evaluator):
                 LEFT JOIN (SELECT o_orderkey, o_totalprice FROM orders) AS t2\
                 ON t1.l_orderkey = t2.o_orderkey",
                 conn,
-            )
+            ) # 24.70s 192MB
 
 
 class PartsuppPartJoinEvaluator(Evaluator):
