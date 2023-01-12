@@ -3,7 +3,7 @@ from collections import OrderedDict
 from model.nodes import DataFrameNode
 
 
-class PandasOptimizer:
+class Optimizer:
     """
     At the moment this is not much more than a stub...
     Ideally, I'd like the creation of the IR to take place here.

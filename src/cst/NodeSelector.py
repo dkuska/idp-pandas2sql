@@ -26,6 +26,8 @@ class NodeSelector(cst.CSTVisitor):
     def __init__(self) -> None:
 
         self.variables: dict[str, Node] = {}
+        self.interesting_nodes: dict[CSTNode, Node] = {}
+        
         """Maps the library names in namespace to the responsible InputModule"""
         self.libraries: dict[str, InputModule] = {}
         """Maps the method names in namespace to the responsible InputModule and the original method name."""
@@ -90,6 +92,8 @@ class NodeSelector(cst.CSTVisitor):
         for target_node in node.targets:
             target_name = target_node.target.value
             self.variables[target_name] = value_node
+
+        self.interesting_nodes[node] = value_node
 
         return False
 

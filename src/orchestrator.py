@@ -2,6 +2,8 @@ import libcst as cst
 
 from cst.NodeSelector import NodeSelector
 from model.nodes import DataFrameNode
+from cst.NodeReplacer import NodeReplacer
+from cst.Optimizer import Optimizer
 
 src = """
 import numpy
@@ -53,30 +55,30 @@ class Orchestrator:
         node_selector = NodeSelector()
         src_tree.visit(node_selector)
 
-        # nodes contain all visited statements in order
-        for variable, node in node_selector.variables.items():
-            print(variable, type(node), end=" ")
-            if isinstance(node, DataFrameNode):
-                print(node.to_code())
-            else:
-                print()
+        # # nodes contain all visited statements in order
+        # for variable, node in node_selector.variables.items():
+        #     print(variable, type(node), end=" ")
+        #     if isinstance(node, DataFrameNode):
+        #         print(node.to_code())
+        #     else:
+        #         print()
 
-        # # Create Optimizer with information from NodeSelector
-        # pandas_optimizer = PandasOptimizer(
-        #     variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes
-        # )
-        # pandas_optimizer.optimize()
-        # pandas_optimizer.map_old_to_new_nodes()
-        # old_nodes_new_nodes = pandas_optimizer.get_optimized_nodes()
+        # Create Optimizer with information from NodeSelector
+        optimizer = Optimizer(
+            variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes
+        )
+        optimizer.optimize()
+        optimizer.map_old_to_new_nodes()
+        old_nodes_new_nodes = optimizer.get_optimized_nodes()
 
-        # # Create new tree with old_nodes_new_nodes
-        # node_replacer = NodeReplacer()
-        # new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
+        # Create new tree with old_nodes_new_nodes
+        node_replacer = NodeReplacer()
+        new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
 
-        # # Export new_code
-        # new_src = new_tree.code
+        # Export new_code
+        new_src = new_tree.code
 
-        # return new_src
+        return new_src
 
 
 def main():
