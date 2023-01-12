@@ -1,12 +1,12 @@
 from collections.abc import Sequence
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import libcst as cst
-from attr import attr
+from libcst import CSTNode
+
 from input.inputModule import InputModule
 from input.pandas import PandasInput
-from libcst import CSTNode
-from model.new_models import DataFrameNode, IRNode, JoinNode, SetKeyNode, SQLNode
+from model.new_models import IRNode
 
 input_modules = [
     PandasInput(),
@@ -29,7 +29,7 @@ class NodeSelector(cst.CSTVisitor):
         """Maps the library names in namespace to the responsible InputModule"""
         self.libraries: dict[str, InputModule] = {}
         """Maps the method names in namespace to the responsible InputModule and the original method name."""
-        self.library_methods: dict[str, Tuple[InputModule, str]] = {}
+        self.library_methods: dict[str, tuple[InputModule, str]] = {}
 
         super().__init__()
 
@@ -155,7 +155,7 @@ class NodeSelector(cst.CSTVisitor):
         arg_value = self.generic_visit(node.value)
         return arg_value
 
-    def parse_KwArg(self, node: cst.Arg) -> Tuple[str, Node]:
+    def parse_KwArg(self, node: cst.Arg) -> tuple[str, Node]:
         arg_value = self.generic_visit(node.value)
         return node.keyword.value, arg_value
 

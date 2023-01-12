@@ -1,5 +1,4 @@
-from model.new_models import DataFrameNode, IRNode
-from pyparsing import Optional
+from model.new_models import IRNode
 
 
 class InputModule:
