@@ -4,7 +4,7 @@ from orchestrator import Orchestrator
 
 
 def parse_file_contents(file_path: str) -> str:
-    with open(file_path, "r") as file:
+    with open(file_path) as file:
         return file.read()
 
 
@@ -17,8 +17,10 @@ def parse_args():
     parser = ArgumentParser(description="Optimize SQL based Pandas operations for Joins and Aggregations")
     parser.add_argument("filepath", type=str, help="Path to the file you want to translate")
     # TODO: Implement these
-    parser.add_argument("--inplace", type=bool, default=True, help="Whether or not to replace the file contents inplace or ")
-    parser.add_argument("--new-filepath", type=str, help='Path of new file if --inplace==False')
+    parser.add_argument(
+        "--inplace", type=bool, default=True, help="Whether or not to replace the file contents inplace or "
+    )
+    parser.add_argument("--new-filepath", type=str, help="Path of new file if --inplace==False")
     args = parser.parse_args()
     return args
 
@@ -31,14 +33,14 @@ def main():
     print(src)
 
     new_src = Orchestrator.transform(src)
-    
+
     print("New Source:")  # DEBUG
     print(new_src)
     if args.inplace:
         new_file_path = args.filepath
-    else: # TODO: Actually implement this
+    else:  # TODO: Actually implement this
         new_file_path = args.filepath
-        
+
     write_new_file_contents(new_file_path, new_src)
 
 
