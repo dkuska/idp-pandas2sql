@@ -6,7 +6,7 @@ from libcst import CSTNode
 
 from input.inputModule import InputModule
 from input.pandas import PandasInput
-from model.new_models import IRNode
+from model.nodes import IRNode
 
 input_modules = [
     PandasInput(),
@@ -26,6 +26,8 @@ class NodeSelector(cst.CSTVisitor):
     def __init__(self) -> None:
 
         self.variables: dict[str, Node] = {}
+        self.interesting_nodes: dict[CSTNode, Node] = {}
+
         """Maps the library names in namespace to the responsible InputModule"""
         self.libraries: dict[str, InputModule] = {}
         """Maps the method names in namespace to the responsible InputModule and the original method name."""
@@ -46,7 +48,7 @@ class NodeSelector(cst.CSTVisitor):
 
         method = getattr(self, method_name)
         ir_node = method(cst_node)
-        if ir_node == None:
+        if ir_node is None:
             return cst_node
         return ir_node
 
@@ -90,6 +92,8 @@ class NodeSelector(cst.CSTVisitor):
         for target_node in node.targets:
             target_name = target_node.target.value
             self.variables[target_name] = value_node
+
+        self.interesting_nodes[node] = value_node
 
         return False
 
@@ -167,3 +171,6 @@ class NodeSelector(cst.CSTVisitor):
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
         return tuple(ret_values)
+
+    def parse_SimpleString(self, node: cst.SimpleString) -> str:
+        return node.value

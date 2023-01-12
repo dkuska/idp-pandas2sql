@@ -1,4 +1,4 @@
-from model.new_models import IRNode
+from model.nodes import IRNode
 
 
 class InputModule:
