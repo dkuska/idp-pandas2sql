@@ -27,7 +27,7 @@ class NodeSelector(cst.CSTVisitor):
 
         self.variables: dict[str, Node] = {}
         self.interesting_nodes: dict[CSTNode, Node] = {}
-        
+
         """Maps the library names in namespace to the responsible InputModule"""
         self.libraries: dict[str, InputModule] = {}
         """Maps the method names in namespace to the responsible InputModule and the original method name."""
@@ -171,6 +171,6 @@ class NodeSelector(cst.CSTVisitor):
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
         return tuple(ret_values)
-    
+
     def parse_SimpleString(self, node: cst.SimpleString) -> str:
         return node.value

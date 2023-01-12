@@ -1,8 +1,7 @@
 import libcst as cst
 
-from cst.NodeSelector import NodeSelector
-from model.nodes import DataFrameNode
 from cst.NodeReplacer import NodeReplacer
+from cst.NodeSelector import NodeSelector
 from cst.Optimizer import Optimizer
 
 src = """
@@ -64,9 +63,7 @@ class Orchestrator:
         #         print()
 
         # Create Optimizer with information from NodeSelector
-        optimizer = Optimizer(
-            variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes
-        )
+        optimizer = Optimizer(variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes)
         optimizer.optimize()
         optimizer.map_old_to_new_nodes()
         old_nodes_new_nodes = optimizer.get_optimized_nodes()
