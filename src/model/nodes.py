@@ -36,7 +36,7 @@ class SQLNode(DataFrameNode):
         else:  # TODO: Needs awareness of used alias
             func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
 
-        args = [cst.Arg(value=cst.SimpleString(value=self.sql_string))]
+        args = [cst.Arg(value=cst.SimpleString(value= '"' + self.sql_string + '"'))]
 
         call = cst.Call(func=func, args=args)
 
