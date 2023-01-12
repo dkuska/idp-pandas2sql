@@ -5,7 +5,6 @@ from math import isclose
 from typing import NamedTuple
 
 import pandas
-
 from db import LOCAL_CONFIG_01GB, PostgresConfig, PostgresConnection
 
 warnings.filterwarnings("ignore")
