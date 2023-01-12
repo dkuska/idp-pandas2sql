@@ -1,9 +1,10 @@
-from collections.abc import Sequence
 from collections import OrderedDict
+from collections.abc import Sequence
 from typing import Union
 
 import libcst as cst
 from libcst import CSTNode
+
 from model.node import DataFrameNode, IRNode, JoinNode, SetKeyNode, SQLNode
 
 # TODO: Actually use these
@@ -17,25 +18,25 @@ class PandasNodeSelector(cst.CSTVisitor):
     """
     Traverses Tree and saves relevant nodes.
     These nodes will then be passed to the IR.
-    
+
     This is a direct copy of the functions of cst_NodeSelector, that are not related to the imports.
-    
+
     Pretty much the only addition is self.interesting_nodes
     This is a dict, that maps the original CSTNode to the IRNodes.
     This is done, because the IRNodes do not keep a reference to the original CSTNode
-    
+
     Additionally a visit_Expr was added, so that we can detect inplace operations on DataFrames such as
     `df.set_index(key, inplace=True)`
-    
+
     TODO: Would be nice, if this would ONLY implement the `is_interesting(node)` functionality and the creation of the IR would take place in the Optimizer
-    
-    
+
+
     """
 
-    def __init__(self, pandas_star_imported: bool,
-                 pandas_aliases: list[str],
-                 imported_pandas_aliases: list[cst.ImportAlias]):
-        self.pandas_star_imported: bool = pandas_star_imported 
+    def __init__(
+        self, pandas_star_imported: bool, pandas_aliases: list[str], imported_pandas_aliases: list[cst.ImportAlias]
+    ):
+        self.pandas_star_imported: bool = pandas_star_imported
         self.pandas_aliases = pandas_aliases
         self.imported_pandas_aliases = imported_pandas_aliases
 
@@ -55,7 +56,7 @@ class PandasNodeSelector(cst.CSTVisitor):
 
         method = getattr(self, method_name)
         ir_node = method(cst_node)
-        if ir_node == None:
+        if ir_node is None:
             return cst_node
         return ir_node
 
@@ -67,13 +68,13 @@ class PandasNodeSelector(cst.CSTVisitor):
         for target_node in node.targets:
             target_name = target_node.target.value
             self.variables[target_name] = value_node
-            
+
         if self.is_interesting(node):
             self.interesting_nodes[node] = value_node
 
     def visit_Expr(self, node: cst.Expr):
         value_node = self.generic_visit(node.value)
-        
+
         if self.is_interesting(node):
             self.interesting_nodes[node] = value_node
 
@@ -88,7 +89,7 @@ class PandasNodeSelector(cst.CSTVisitor):
 
         return func_name in all_pandas_aliases
 
-    def original_function_name(self, name: str) -> str: # TODO: Actually use this...
+    def original_function_name(self, name: str) -> str:  # TODO: Actually use this...
         for alias in self.imported_pandas_aliases:
             if alias.evaluated_alias == name:
                 return alias.evaluated_name
