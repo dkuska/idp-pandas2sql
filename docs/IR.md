@@ -20,7 +20,7 @@
   - Join Columns need to be specified (different from pandas, where default behavior is joining on index column)
 
 - Aggregations
-  - 
+  -
 
 - SQL Interaction
   - RelationalExecutor object which manages DB connection
@@ -43,4 +43,4 @@
 
 - Grizzly seems like a good starting point
 - In addition keeping the source AST/CST Node would be nice to do 'inplace' replacements, however this could increase the memory consumption significantly
-- 
+-
