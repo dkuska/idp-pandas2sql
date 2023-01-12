@@ -1,9 +1,6 @@
 import libcst as cst
 
-from cst.NodeReplacer import NodeReplacer
 from cst.NodeSelector import NodeSelector
-from cst.PandasOptimizer import PandasOptimizer
-
 from model.nodes import DataFrameNode
 
 src = """
@@ -52,9 +49,9 @@ class Orchestrator:
         # Transform into CST
         src_tree = cst.parse_module(src)
 
-        # Create NodeSelector 
+        # Create NodeSelector
         node_selector = NodeSelector()
-        src_tree.visit(node_selector)    
+        src_tree.visit(node_selector)
 
         # nodes contain all visited statements in order
         for variable, node in node_selector.variables.items():
@@ -63,23 +60,23 @@ class Orchestrator:
                 print(node.to_code())
             else:
                 print()
-        
-        # Create Optimizer with information from NodeSelector
-        pandas_optimizer = PandasOptimizer(
-            variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes
-        )
-        pandas_optimizer.optimize()
-        pandas_optimizer.map_old_to_new_nodes()
-        old_nodes_new_nodes = pandas_optimizer.get_optimized_nodes()
 
-        # Create new tree with old_nodes_new_nodes
-        node_replacer = NodeReplacer()
-        new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
+        # # Create Optimizer with information from NodeSelector
+        # pandas_optimizer = PandasOptimizer(
+        #     variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes
+        # )
+        # pandas_optimizer.optimize()
+        # pandas_optimizer.map_old_to_new_nodes()
+        # old_nodes_new_nodes = pandas_optimizer.get_optimized_nodes()
 
-        # Export new_code
-        new_src = new_tree.code
+        # # Create new tree with old_nodes_new_nodes
+        # node_replacer = NodeReplacer()
+        # new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
 
-        return new_src
+        # # Export new_code
+        # new_src = new_tree.code
+
+        # return new_src
 
 
 def main():
