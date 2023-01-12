@@ -29,7 +29,8 @@ class Orchestrator:
 
     def __init__(self):
         pass
-
+    
+    @staticmethod
     def transform(self, src: str) -> str:
         """
         One big function that does everything:
@@ -81,7 +82,6 @@ class Orchestrator:
 def main():
     print("Old Source:")
     print(src)
-
     orchestrator = Orchestrator()
     new_src = orchestrator.transform(src)
     print("New Source:")
