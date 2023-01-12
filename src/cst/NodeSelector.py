@@ -167,3 +167,6 @@ class NodeSelector(cst.CSTVisitor):
         for element in node.elements:
             ret_values.append(self.generic_visit(element))
         return tuple(ret_values)
+    
+    def parse_SimpleString(self, node: cst.SimpleString) -> str:
+        return node.value

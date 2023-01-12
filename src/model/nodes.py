@@ -25,7 +25,7 @@ class SQLNode(DataFrameNode):
 
     @property
     def sql_string(self):
-        return self.sql.value.replace('"', "")
+        return self.sql.replace('"', "")
 
     def to_code(self):
         return f"read_sql({self.sql_string}, SOME CON)"
@@ -73,7 +73,7 @@ class JoinNode(DataFrameNode):
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
             left_sql = self.left.node.sql_string.replace('"', "")
-            left_key = self.left.key.value.replace('"', "").replace("'", "")
+            left_key = self.left.key.replace('"', "").replace("'", "")
         else:
             pass
 
@@ -85,7 +85,7 @@ class JoinNode(DataFrameNode):
         elif isinstance(self.left, SetKeyNode):
             right_set_key = True
             right_sql = self.right.node.sql_string.replace('"', "")
-            right_key = self.right.key.value.replace('"', "").replace("'", "")  # TODO: Implement for more complex types
+            right_key = self.right.key.replace('"', "").replace("'", "")  # TODO: Implement for more complex types
         else:
             pass
 
@@ -129,7 +129,7 @@ class SetKeyNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     def to_code(self):
-        return f"({self.node.to_code()}).set_key({self.key.value})"
+        return f"({self.node.to_code()}).set_key({self.key})"
 
     def to_cst_node(self, target):
         func = cst.Attribute(value=self.node.to_cst_statement(), attr="join")
