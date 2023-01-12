@@ -5,7 +5,7 @@ from typing import Union
 import libcst as cst
 from libcst import CSTNode
 
-from model.node import DataFrameNode, IRNode, JoinNode, SetKeyNode, SQLNode
+from model.nodes import DataFrameNode, IRNode, JoinNode, SetKeyNode, SQLNode
 
 # TODO: Actually use these
 # PANDAS_FUNCTIONS_RETURNING_DATAFRAME = ["read_sql"]

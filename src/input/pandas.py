@@ -1,5 +1,5 @@
 from input.inputModule import InputModule
-from model.new_models import IRNode, JoinNode, SetKeyNode, SQLNode
+from model.nodes import IRNode, JoinNode, SetKeyNode, SQLNode
 
 
 class PandasInput(InputModule):
