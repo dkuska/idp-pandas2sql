@@ -4,11 +4,11 @@ from abc import ABC, abstractproperty, abstractstaticmethod
 from math import isclose
 from typing import NamedTuple
 
-warnings.filterwarnings("ignore")
-
 import pandas
 
 from db import LOCAL_CONFIG_01GB, PostgresConfig, PostgresConnection
+
+warnings.filterwarnings("ignore")
 
 
 class EvaluationResult(NamedTuple):
@@ -34,7 +34,7 @@ class Evaluator(ABC):
         are_equal = False
         if isinstance(unoptimized_results, pandas.DataFrame):
             if unoptimized_results.equals(optimized_results):
-            # if unoptimized_results[~unoptimized_results.apply(tuple, 1).isin(optimized_results.apply(tuple, 1))].empty:
+                # if unoptimized_results[~unoptimized_results.apply(tuple, 1).isin(optimized_results.apply(tuple, 1))].empty:
                 are_equal = True
         elif isinstance(unoptimized_results, float):
             if isclose(unoptimized_results, optimized_results, rel_tol=1e-09, abs_tol=0.0):
@@ -81,9 +81,11 @@ class LineItemOrdersJoinEvaluator(Evaluator):
     @staticmethod
     def unoptimized_function(db_config: PostgresConfig):
         with PostgresConnection(db_config) as conn:
-            line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn) # 13.25s 96MB
-            orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn) # 3.21 24MB
-            return pandas.merge(line_items, orders, left_on="l_orderkey", right_on="o_orderkey", how="left") # 1.06s 240MB
+            line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn)  # 13.25s 96MB
+            orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn)  # 3.21 24MB
+            return pandas.merge(
+                line_items, orders, left_on="l_orderkey", right_on="o_orderkey", how="left"
+            )  # 1.06s 240MB
             # return pandas.merge(line_items, orders, on="orderkey", suffixes=("l_", "o_"), how="left")
 
     @staticmethod
@@ -95,7 +97,7 @@ class LineItemOrdersJoinEvaluator(Evaluator):
                 LEFT JOIN (SELECT o_orderkey, o_totalprice FROM orders) AS t2\
                 ON t1.l_orderkey = t2.o_orderkey",
                 conn,
-            ) # 24.70s 192MB
+            )  # 24.70s 192MB
 
 
 class PartsuppPartJoinEvaluator(Evaluator):
