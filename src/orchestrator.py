@@ -29,7 +29,7 @@ class Orchestrator:
 
     def __init__(self):
         pass
-    
+
     @staticmethod
     def transform(self, src: str) -> str:
         """
