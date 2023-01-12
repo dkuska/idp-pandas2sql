@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from model.new_models import DataFrameNode
+from model.nodes import DataFrameNode
 
 
 class PandasOptimizer:

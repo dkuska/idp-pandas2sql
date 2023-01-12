@@ -6,7 +6,7 @@ from libcst import CSTNode
 
 from input.inputModule import InputModule
 from input.pandas import PandasInput
-from model.new_models import IRNode
+from model.nodes import IRNode
 
 input_modules = [
     PandasInput(),
