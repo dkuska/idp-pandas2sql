@@ -31,7 +31,7 @@ class Orchestrator:
         pass
 
     @staticmethod
-    def transform(self, src: str) -> str:
+    def transform(src: str) -> str:
         """
         One big function that does everything:
         1. create CST from source string

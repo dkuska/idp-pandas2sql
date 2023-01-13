@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("filepath", type=str, help="Path to the file you want to translate")
     # TODO: Implement these
     parser.add_argument(
-        "--inplace", type=bool, default=True, help="Whether or not to replace the file contents inplace or "
+        "--inplace", type=bool, default=False, help="Whether or not to replace the file contents inplace or "
     )
     parser.add_argument("--new-filepath", type=str, help="Path of new file if --inplace==False")
     args = parser.parse_args()
@@ -27,7 +27,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-
     src = parse_file_contents(args.filepath)
     print("Old Source:")  # DEBUG
     print(src)
@@ -38,8 +37,10 @@ def main():
     print(new_src)
     if args.inplace:
         new_file_path = args.filepath
-    else:  # TODO: Actually implement this
-        new_file_path = args.filepath
+    elif args.new_filepath:
+        new_file_path = args.new_filepath
+    else:
+        new_file_path = f"optimized_{args.filepath}"
 
     write_new_file_contents(new_file_path, new_src)
 
