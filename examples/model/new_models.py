@@ -2,7 +2,9 @@ from abc import ABC
 
 from libcst import CSTNode
 
-# TODO: when translating forwards the args
+# TODO:
+# when translating forwards the args
+# replace SOME CONN with the actual conn
 
 
 class IRNode(ABC):
@@ -87,20 +89,35 @@ class AggregationNode(DataFrameNode):
     @property
     def sql_string(self):
         if self.node.sql_string:
-            return f"{inject_aggregation(self.aggregation, self.node.sql_string)}"
+            query = self.node.sql_string
+            selected_columns = selected_columns_in_query(query)
+            for column in selected_columns:
+                query = query.replace(column, f"{self.aggregation.upper()}({column}) AS {self.aggregation}_{column}", 1)
+
+            return query
 
     def to_code(self):
-        if self.sql_string:
-            return f'read_sql("{self.sql_string}", SOME CONN)'
-        else:
+        if not self.node.sql_string:
             return f"({self.node.to_code()}).{self.aggregation}()"
 
+        selected_columns = selected_columns_in_query(self.node.sql_string)
+        if selected_columns == ["*"]:
+            # we save results of pre_query in a temp variable. problematic if temp is already used
+            variable_name = "temp"
+            return (
+                f'{variable_name} = pandas.read_sql("{self.node.sql_string} LIMIT 0", SOME CONN).columns'
+                + "\n"
+                + 'pandas.read_sql(f"'
+                + self.node.sql_string.replace(
+                    "*",
+                    f"{{', '.join(['{self.aggregation.upper()}(' + c + ') AS {self.aggregation}_' + c for c in {variable_name}])}}",
+                    1,
+                )
+                + '", SOME CONN)'
+            )
+        return f'read_sql("{self.sql_string}", SOME CONN)'
 
-# inject_aggregation("max", "SELECT a, b, c FROM d") will output
-# SELECT MAX(a) AS max_a, MAX(b) AS max_b, MAX(c) AS max_c FROM d
-def inject_aggregation(aggregation, query):
+
+def selected_columns_in_query(query):
     lower_query = query.lower()
-    selected_columns = [column.strip() for column in (lower_query.split("select"))[1].split("from")[0].split(",")]
-    for column in selected_columns:
-        query = query.replace(column, f"{aggregation.upper()}({column}) AS {aggregation}_{column}")
-    return query
+    return [column.strip() for column in (lower_query.split("select"))[1].split("from")[0].split(",")]
