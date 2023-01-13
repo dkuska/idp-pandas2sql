@@ -10,6 +10,8 @@ class PandasInput(InputModule):
     def visit_call(self, func_name: str, args: list, kwargs: dict):
         if func_name == "read_sql":
             return SQLNode(*args, **kwargs)
+        if func_name == "merge":
+            return JoinNode(*args, **kwargs)
 
     def visit_call_on_ir_node(self, ir_node: IRNode, func_name: str, args: list, kwargs: dict):
         if func_name == "join":
