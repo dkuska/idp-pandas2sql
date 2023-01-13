@@ -1,5 +1,5 @@
 from input.inputModule import InputModule
-from model.new_models import IRNode, JoinNode, SetKeyNode, SQLNode
+from model.new_models import AggregationNode, IRNode, JoinNode, SetKeyNode, SQLNode
 
 
 class PandasInput(InputModule):
@@ -18,3 +18,5 @@ class PandasInput(InputModule):
             return JoinNode(ir_node, *args, **kwargs)
         if func_name == "set_index":
             return SetKeyNode(ir_node, *args, **kwargs)
+        if func_name in AggregationNode.supported_aggregations():
+            return AggregationNode(ir_node, func_name, *args, **kwargs)
