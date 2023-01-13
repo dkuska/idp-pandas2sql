@@ -58,3 +58,22 @@ class SetKeyNode(DataFrameNode):
 
     def to_code(self):
         return f"({self.node.to_code()}).set_key({self.key.value})"
+
+
+class AggregationNode(DataFrameNode):
+    @staticmethod
+    def supported_aggregations():
+        return ["max", "min", "sum", "avg"]
+
+    def __init__(self, node: DataFrameNode, aggregation: str, *args, **kwargs):
+        node.parent = self
+
+        self.node = node
+        if aggregation not in self.supported_aggregations():
+            raise Exception("unsupported aggregation function was given")
+        self.aggregation = aggregation
+
+        super().__init__(*args, **kwargs)
+
+    def to_code(self):
+        return f'{self.aggregation.upper()}({self.node.to_code()})["{self.aggregation()}"]'
