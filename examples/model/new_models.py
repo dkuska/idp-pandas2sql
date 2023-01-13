@@ -2,6 +2,8 @@ from abc import ABC
 
 from libcst import CSTNode
 
+# TODO: when translating forwards the args
+
 
 class IRNode(ABC):
     def __init__(self, parent=None, library=None, *args, **kwargs):
@@ -12,7 +14,9 @@ class IRNode(ABC):
 
 
 class DataFrameNode(IRNode):
-    pass
+    @property
+    def sql_string(self):
+        pass
 
 
 class SQLNode(DataFrameNode):
@@ -27,7 +31,7 @@ class SQLNode(DataFrameNode):
         return self.sql.value.replace('"', "")
 
     def to_code(self):
-        return f"read_sql({self.sql_string}, SOME CON)"
+        return f'read_sql("{self.sql_string}", {self.con})'
 
 
 class JoinNode(DataFrameNode):
@@ -40,9 +44,14 @@ class JoinNode(DataFrameNode):
 
         super().__init__(*args, **kwargs)
 
+    @property
+    def sql_string(self):
+        if self.left.sql_string and self.right.sql_string:  # check if two connections are the same
+            return f"'SELECT * FROM ({self.left.sql_string}) JOIN ({self.right.sql_string})')"
+
     def to_code(self):
-        if hasattr(self.left, "sql_string") and hasattr(self.right, "sql_string"):
-            return f"read_sql('SELECT * FROM ({self.left.sql_string}) JOIN ({self.right.sql_string})')"
+        if self.sql_string:
+            return f'read_sql("{self.sql_string}", SOME CONN)'  # get the con from children
         else:
             return f"({self.left.to_code()}).join({self.right.to_code()})"
 
@@ -75,5 +84,23 @@ class AggregationNode(DataFrameNode):
 
         super().__init__(*args, **kwargs)
 
+    @property
+    def sql_string(self):
+        if self.node.sql_string:
+            return f"{inject_aggregation(self.aggregation, self.node.sql_string)}"
+
     def to_code(self):
-        return f'{self.aggregation.upper()}({self.node.to_code()})["{self.aggregation()}"]'
+        if self.sql_string:
+            return f'read_sql("{self.sql_string}", SOME CONN)'
+        else:
+            return f"({self.node.to_code()}).{self.aggregation}()"
+
+
+# inject_aggregation("max", "SELECT a, b, c FROM d") will output
+# SELECT MAX(a) AS max_a, MAX(b) AS max_b, MAX(c) AS max_c FROM d
+def inject_aggregation(aggregation, query):
+    lower_query = query.lower()
+    selected_columns = [column.strip() for column in (lower_query.split("select"))[1].split("from")[0].split(",")]
+    for column in selected_columns:
+        query = query.replace(column, f"{aggregation.upper()}({column}) AS {aggregation}_{column}")
+    return query
