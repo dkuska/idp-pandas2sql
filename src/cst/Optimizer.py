@@ -35,14 +35,10 @@ class Optimizer:
             if isinstance(IRNode, DataFrameNode):
                 for target, value in self.variables.items():
                     if IRNode == value:
-                        call = IRNode.to_cst_statement()
+                        call = IRNode.to_cst_node()
                         targets = [cst.AssignTarget(target=cst.Name(target))]  # TODO: Needs awareness of assignment name
-                        assign = cst.Assign(targets=targets, value=call)
-
-                        self.optimized_nodes[old_node] = assign
-                        
-                        # TODO: Make Optimizer create Assignment
-                        # TODO: Make IR Node only return the Call Object instead of the cst.Assign
+                        assign = cst.Assign(targets=targets, value=call)    
+                        new_node = cst.SimpleStatementLine(body=[assign])
 
             if old_node != new_node and new_node is not None:
                 self.optimized_nodes[old_node] = new_node
