@@ -30,7 +30,7 @@ class SQLNode(DataFrameNode):
     def to_code(self):
         return f"read_sql({self.sql_string}, SOME CON)"
 
-    def to_cst_node(self, variable: str):
+    def to_cst_node(self):
         if True:
             func = cst.Name(value="read_sql")
         else:  # TODO: Needs awareness of used alias
@@ -38,14 +38,8 @@ class SQLNode(DataFrameNode):
 
         args = [cst.Arg(value=cst.SimpleString(value='"' + self.sql_string + '"'))]
 
-        call = cst.Call(func=func, args=args)
+        return cst.Call(func=func, args=args)
 
-        targets = [cst.AssignTarget(target=cst.Name(variable))]  # TODO: Needs awareness of assignment name
-        assign = cst.Assign(targets=targets, value=call)
-        return assign
-
-    def to_cst_statement(self, variable: str):
-        return cst.SimpleStatementLine(body=[self.to_cst_node(variable)])
 
 
 class JoinNode(DataFrameNode):
@@ -110,12 +104,6 @@ class JoinNode(DataFrameNode):
 
         return cst.Call(func=func, args=args)
 
-
-
-    def to_cst_statement(self, variable: str):
-        return cst.SimpleStatementLine(body=[self.to_cst_node(variable)])
-
-
 class SetKeyNode(DataFrameNode):
     def __init__(self, node: DataFrameNode, key: CSTNode, *args, **kwargs):
         node.parent = self
@@ -128,16 +116,8 @@ class SetKeyNode(DataFrameNode):
     def to_code(self):
         return f"({self.node.to_code()}).set_key({self.key})"
 
-    def to_cst_node(self, target):
+    def to_cst_node(self):
         func = cst.Attribute(value=self.node.to_cst_statement(), attr="join")
         args = [cst.Arg(value=self.key)]
 
-        call = cst.Call(func=func, args=args)
-
-        targets = [cst.AssignTarget(target=cst.Name(value=target))]
-        assign = cst.Assign(targets=targets, value=call)
-
-        return assign
-
-    def to_cst_statement(self):
-        return cst.SimpleStatementLine(body=[self.to_cst_node()])
+        return cst.Call(func=func, args=args)
