@@ -41,7 +41,6 @@ class SQLNode(DataFrameNode):
         return cst.Call(func=func, args=args)
 
 
-
 class JoinNode(DataFrameNode):
     def __init__(self, left: DataFrameNode, right: DataFrameNode, *args, **kwargs):
         left.parent = self
@@ -103,6 +102,7 @@ class JoinNode(DataFrameNode):
         args = [cst.Arg(value=cst.SimpleString(value=query_str))]
 
         return cst.Call(func=func, args=args)
+
 
 class SetKeyNode(DataFrameNode):
     def __init__(self, node: DataFrameNode, key: CSTNode, *args, **kwargs):
