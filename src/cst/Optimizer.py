@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from model.nodes import DataFrameNode
-
+import libcst as cst
 
 class Optimizer:
     """
@@ -35,7 +35,14 @@ class Optimizer:
             if isinstance(IRNode, DataFrameNode):
                 for target, value in self.variables.items():
                     if IRNode == value:
-                        new_node = IRNode.to_cst_statement(target)
+                        call = IRNode.to_cst_statement()
+                        targets = [cst.AssignTarget(target=cst.Name(target))]  # TODO: Needs awareness of assignment name
+                        assign = cst.Assign(targets=targets, value=call)
+
+                        self.optimized_nodes[old_node] = assign
+                        
+                        # TODO: Make Optimizer create Assignment
+                        # TODO: Make IR Node only return the Call Object instead of the cst.Assign
 
             if old_node != new_node and new_node is not None:
                 self.optimized_nodes[old_node] = new_node

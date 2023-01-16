@@ -64,7 +64,7 @@ class JoinNode(DataFrameNode):
         else:
             return f"({self.left.to_code()}).join({self.right.to_code()})"
 
-    def to_cst_node(self, variable: str):
+    def to_cst_node(self):
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
@@ -108,12 +108,9 @@ class JoinNode(DataFrameNode):
             func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
         args = [cst.Arg(value=cst.SimpleString(value=query_str))]
 
-        call = cst.Call(func=func, args=args)
+        return cst.Call(func=func, args=args)
 
-        targets = [cst.AssignTarget(target=cst.Name(variable))]  # TODO: Needs awareness of assignment name
-        assign = cst.Assign(targets=targets, value=call)
 
-        return assign
 
     def to_cst_statement(self, variable: str):
         return cst.SimpleStatementLine(body=[self.to_cst_node(variable)])
