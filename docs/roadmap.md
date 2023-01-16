@@ -2,19 +2,24 @@
 
 ## CW 2
 
-- Tobi resolve PR
-- Pour new modularized code into Orchestrator Architecture
+- Tobi resolve PR - Done
+- Pour new modularized code into Orchestrator Architecture - Done
 - IR:
-  - Aggregation
-  - Merge
+  - Aggregation - Done
+  - Merge - Done
   - Saving of original CST Node (So that new formatting matches old formatting)
 
 ## CW 3
 
-- Orchestrator Source File -> Code -> Optimize -> New Code -> New Source File
+- Orchestrator Source File -> Code -> Optimize -> New Code -> New Source File - Done
+  - Question @ Ilin: Create new file with optimized code or just run optimized code
+  
 - Code Generation clean-up (Integration of formatting)
-- Aggregation Query Generation
-- Merge Query Generation
+- Aggregation Query Generation - Done
+- Merge Query Generation - Done
+- Automated testing - Abdu
+- Dask - Try to fit functions into IR - Tobi
+- Pre-Post Queries - Dave
 
 ## CW 4
 
