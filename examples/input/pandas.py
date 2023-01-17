@@ -18,5 +18,11 @@ class PandasInput(InputModule):
             return JoinNode(ir_node, *args, **kwargs)
         if func_name == "set_index":
             return SetKeyNode(ir_node, *args, **kwargs)
-        if func_name in AggregationNode.supported_aggregations():
-            return AggregationNode(ir_node, func_name, *args, **kwargs)
+        if func_name == "min":
+            return AggregationNode(ir_node, "min", *args, **kwargs)
+        if func_name == "max":
+            return AggregationNode(ir_node, "max", *args, **kwargs)
+        if func_name == "sum":
+            return AggregationNode(ir_node, "sum", *args, **kwargs)
+        if func_name == "mean":  # watch out, mean is avg
+            return AggregationNode(ir_node, "avg", *args, **kwargs)
