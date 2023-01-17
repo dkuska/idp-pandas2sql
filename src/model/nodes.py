@@ -1,4 +1,5 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from typing import NamedTuple
 
 import libcst as cst
 from libcst import CSTNode
@@ -8,12 +9,22 @@ from libcst import CSTNode
 # replace SOME CONN with the actual conn
 
 
+class CSTTranslation(NamedTuple):
+    code: cst.CSTNode
+    precode: cst.CSTNode = None
+    postcode: cst.CSTNode = None
+
+
 class IRNode(ABC):
     def __init__(self, parent=None, library=None, *args, **kwargs):
         self.parent = parent
         self.library = library
         if args or kwargs:
             print(f"These args: {args} and kwargs: {list(kwargs.keys())} don't have a translation rule yet")
+
+    @abstractmethod
+    def to_cst_translation(self) -> CSTTranslation:
+        pass
 
 
 class DataFrameNode(IRNode):
@@ -30,13 +41,13 @@ class SQLNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self):
+    def sql_string(self) -> str:
         return self.sql.replace('"', "")
 
-    def to_code(self):
+    def to_code(self) -> str:
         return f'read_sql("{self.sql_string}", SOME CON)'
 
-    def to_cst_node(self):
+    def to_cst_translation(self) -> CSTTranslation:
         if True:
             func = cst.Name(value="read_sql")
         else:  # TODO: Needs awareness of used alias
@@ -44,7 +55,7 @@ class SQLNode(DataFrameNode):
 
         args = [cst.Arg(value=cst.SimpleString(value='"' + self.sql_string + '"'))]
 
-        return cst.Call(func=func, args=args)
+        return CSTTranslation(code=cst.Call(func=func, args=args))
 
 
 class JoinNode(DataFrameNode):
@@ -58,22 +69,21 @@ class JoinNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self):
+    def sql_string(self) -> str:
         if self.left.sql_string and self.right.sql_string:  # check if two connections are the same
             return f"'SELECT * FROM ({self.left.sql_string}) JOIN ({self.right.sql_string})')"
 
-    def to_code(self):
+    def to_code(self) -> str:
         if self.sql_string:
             return f'read_sql("{self.sql_string}", SOME CONN)'  # get the con from children
         else:
             return f"({self.left.to_code()}).join({self.right.to_code()})"
 
-    def to_cst_node(self):
+    def to_cst_translation(self) -> CSTTranslation:
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
             left_sql = self.left.sql_string.replace('"', "")
-            pass
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
             left_sql = self.left.node.sql_string.replace('"', "")
@@ -85,7 +95,6 @@ class JoinNode(DataFrameNode):
         right_set_key = False
         if isinstance(self.left, SQLNode):
             right_sql = self.right.sql_string.replace('"', "")
-            pass
         elif isinstance(self.left, SetKeyNode):
             right_set_key = True
             right_sql = self.right.node.sql_string.replace('"', "")
@@ -112,7 +121,7 @@ class JoinNode(DataFrameNode):
             func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
         args = [cst.Arg(value=cst.SimpleString(value=query_str))]
 
-        return cst.Call(func=func, args=args)
+        return CSTTranslation(code=cst.Call(func=func, args=args))
 
 
 class SetKeyNode(DataFrameNode):
@@ -124,14 +133,14 @@ class SetKeyNode(DataFrameNode):
 
         super().__init__(*args, **kwargs)
 
-    def to_code(self):
+    def to_code(self) -> str:
         return f"({self.node.to_code()}).set_key({self.key})"
 
-    def to_cst_node(self):
+    def to_cst_translation(self) -> CSTTranslation:
         func = cst.Attribute(value=self.node.to_cst_statement(), attr="join")
         args = [cst.Arg(value=self.key)]
 
-        return cst.Call(func=func, args=args)
+        return CSTTranslation(code=cst.Call(func=func, args=args))
 
 
 class AggregationNode(DataFrameNode):
@@ -150,7 +159,7 @@ class AggregationNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self):
+    def sql_string(self) -> str:
         if self.node.sql_string:
             query = self.node.sql_string
             selected_columns = selected_columns_in_query(query)
@@ -159,7 +168,7 @@ class AggregationNode(DataFrameNode):
 
             return query
 
-    def to_code(self):
+    def to_code(self) -> str:
         if not self.node.sql_string:
             return f"({self.node.to_code()}).{self.aggregation}()"
 
@@ -179,6 +188,9 @@ class AggregationNode(DataFrameNode):
                 + '", SOME CONN)'
             )
         return f'read_sql("{self.sql_string}", SOME CONN)'
+
+    def to_cst_translation(self) -> CSTTranslation:
+        pass
 
 
 def selected_columns_in_query(query):

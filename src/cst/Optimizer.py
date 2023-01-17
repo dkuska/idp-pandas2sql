@@ -31,16 +31,15 @@ class Optimizer:
         This is super stupid...
         It is mostly required, because self.variables saves the reference to the target, which is needed for to_cst_statement
         """
-        for old_node, IRNode in self.interesting_nodes.items():
-            # Woohoo, we can do something here...
+        for old_node, ir_node in self.interesting_nodes.items():
             new_node = None
-            if isinstance(IRNode, DataFrameNode):
+            if isinstance(ir_node, DataFrameNode):
                 for target, value in self.variables.items():
-                    if IRNode == value:
-                        call = IRNode.to_cst_node()
-                        targets = [
-                            cst.AssignTarget(target=cst.Name(target))
-                        ]  # TODO: Needs awareness of assignment name
+                    if ir_node == value:
+                        cst_translation = ir_node.to_cst_translation()
+                        call = cst_translation.code
+                        # TODO: Needs awareness of assignment name
+                        targets = [cst.AssignTarget(target=cst.Name(target))]
                         assign = cst.Assign(targets=targets, value=call)
                         new_node = cst.SimpleStatementLine(body=[assign])
 
