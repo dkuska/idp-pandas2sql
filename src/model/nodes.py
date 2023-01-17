@@ -9,10 +9,15 @@ from libcst import CSTNode
 # replace SOME CONN with the actual conn
 
 
+def str_code_to_cst(code: str):
+    cst_tree = cst.parse_expression(code)
+    return cst_tree
+
+
 class CSTTranslation(NamedTuple):
     code: cst.CSTNode
-    precode: cst.CSTNode = None
-    postcode: cst.CSTNode = None
+    precode: list[cst.CSTNode] = []
+    postcode: list[cst.CSTNode] = []
 
 
 class IRNode(ABC):
@@ -190,7 +195,28 @@ class AggregationNode(DataFrameNode):
         return f'read_sql("{self.sql_string}", SOME CONN)'
 
     def to_cst_translation(self) -> CSTTranslation:
-        pass
+        selected_columns = selected_columns_in_query(self.node.sql_string)
+        precode = []
+        sql_query = self.sql_string
+
+        if selected_columns == ["*"]:
+            variable_name = "temp"
+            assign_target = cst.AssignTarget(target=cst.Name(value=variable_name))
+            prequery = sql_query + " LIMIT 0"
+            attribute = cst.Name(value="columns")
+            call = cst.Call(
+                func=cst.Name(value="read_sql"),
+                args=[cst.Arg(value=str_code_to_cst('"' + prequery + '"'))],
+            )
+            precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
+            sql_query = self.node.sql_string.replace(
+                "*",
+                f"{{', '.join(['{self.aggregation.upper()}(' + c + ') AS {self.aggregation}_' + c for c in {variable_name}])}}",
+                1,
+            )
+
+        code = cst.Call(func=cst.Name(value="read_sql"), args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"'))])
+        return CSTTranslation(code=code, precode=precode)
 
 
 def selected_columns_in_query(query):

@@ -32,19 +32,20 @@ class Optimizer:
         It is mostly required, because self.variables saves the reference to the target, which is needed for to_cst_statement
         """
         for old_node, ir_node in self.interesting_nodes.items():
-            new_node = None
+            new_nodes = []
             if isinstance(ir_node, DataFrameNode):
                 for target, value in self.variables.items():
                     if ir_node == value:
                         cst_translation = ir_node.to_cst_translation()
-                        call = cst_translation.code
                         # TODO: Needs awareness of assignment name
                         targets = [cst.AssignTarget(target=cst.Name(target))]
-                        assign = cst.Assign(targets=targets, value=call)
-                        new_node = cst.SimpleStatementLine(body=[assign])
+                        assign = cst.Assign(targets=targets, value=cst_translation.code)
+                        new_nodes.extend([cst.SimpleStatementLine(body=[node]) for node in cst_translation.precode])
+                        new_nodes.append(cst.SimpleStatementLine(body=[assign]))
+                        new_nodes.extend([cst.SimpleStatementLine(body=[node]) for node in cst_translation.postcode])
 
-            if old_node != new_node and new_node is not None:
-                self.optimized_nodes[old_node] = new_node
+            if new_nodes and [old_node] != new_nodes:
+                self.optimized_nodes[old_node] = new_nodes
 
     def get_optimized_nodes(self):
         return self.optimized_nodes
