@@ -132,3 +132,6 @@ dmypy.json
 # Data
 *.tbl
 *.ddl
+
+# Samples
+*sample.py

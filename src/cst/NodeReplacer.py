@@ -27,7 +27,7 @@ class NodeReplacer:
                     node_replaced = False
 
             if node_replaced:
-                new_tree_body.append(node_replacement)
+                new_tree_body.extend(node_replacement)
             else:
                 new_tree_body.append(src_node)
 
