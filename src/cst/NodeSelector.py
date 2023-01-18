@@ -105,7 +105,7 @@ class NodeSelector(cst.CSTVisitor):
             if func_alias not in self.library_methods:
                 return
             module, func_name = self.library_methods[func_alias]
-            result = module.visit_method(func_name, args, kwargs)
+            result = module.visit_function(func_name, args, kwargs)
 
         elif isinstance(node.func, cst.Attribute):
             attribute = self.generic_visit(node.func.value)
@@ -115,12 +115,12 @@ class NodeSelector(cst.CSTVisitor):
                     return
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
-                result = module.visit_method(func_name, args, kwargs)
+                result = module.visit_function(func_name, args, kwargs)
             elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
-                func_name = node.func.attr.value
+                method_name = node.func.attr.value
                 node = attribute
                 module = module_by_name[node.library]
-                result = module.visit_df_method(node, func_name, args, kwargs)
+                result = module.visit_df_method(node, method_name, args, kwargs)
             else:
                 print("Warning: Something strange got called: ", attribute)
 
