@@ -13,7 +13,7 @@ class InputModule:
         """Return every symbol that is imported when importing * from the library"""
         return []
 
-    def visit_method(self, func_name: str, args: list, kwargs: dict) -> Optional[IRNode]:
+    def visit_function(self, func_name: str, args: list, kwargs: dict) -> Optional[IRNode]:
         visitor_method_name = f"visit_{func_name}"
 
         if not hasattr(self, visitor_method_name):
