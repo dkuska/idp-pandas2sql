@@ -12,12 +12,12 @@ class PandasInput(InputModule):
     def visit_read_sql(self, *args, **kwargs):
         return SQLNode(*args, **kwargs)
 
-    def visit_merge(self, *args, **kwargs):
-        return JoinNode(*args, **kwargs)
-
     # df methods
 
     def visit_df_join(self, ir_node: IRNode, *args, **kwargs):
+        return JoinNode(ir_node, *args, **kwargs)
+
+    def visit_df_merge(self, ir_node: IRNode, *args, **kwargs):
         return JoinNode(ir_node, *args, **kwargs)
 
     def visit_df_set_index(self, ir_node: IRNode, *args, **kwargs):
