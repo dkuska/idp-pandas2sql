@@ -12,13 +12,7 @@ class DaskInput(InputModule):
     def visit_read_sql_query(self, *args, **kwargs):
         return SQLNode(*args, **kwargs)
 
-    def visit_read_sql_table(self, *args, **kwargs):
-        if "table_name" in kwargs:
-            table_name = kwargs["table_name"]
-            del kwargs["table_name"]
-        else:
-            table_name = args[0]
-            args = args[1:]
+    def visit_read_sql_table(self, table_name, *args, **kwargs):
         return SQLNode(f"SELECT * FROM {table_name}", *args, **kwargs)
 
     # df methods
