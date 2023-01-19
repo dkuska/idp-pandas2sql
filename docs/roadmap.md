@@ -14,7 +14,7 @@
 - Orchestrator Source File -> Code -> Optimize -> New Code -> New Source File - Done
   - Question @ Ilin: Create new file with optimized code or just run optimized code
 
-- Code Generation clean-up (Integration of formatting)
+- Code Generation clean-up (Integration of formatting) - Dave
 - Aggregation Query Generation - Done
 - Merge Query Generation - Done
 - Automated testing & Directory clean-up - Abdu
