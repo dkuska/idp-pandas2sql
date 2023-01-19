@@ -12,7 +12,7 @@ input_modules = [
     PandasInput(),
 ]
 
-module_by_name: dict[str, InputModule] = {module.module_name: module for module in input_modules}
+module_by_name = {module.module_name: module for module in input_modules}
 
 Node = Union[CSTNode, IRNode]
 
@@ -40,6 +40,9 @@ class NodeSelector(cst.CSTVisitor):
         method_name = f"parse_{class_name}"
 
         if not hasattr(self, method_name):
+            # raise NotImplementedError(
+            #     f'No way to parse CST Node of type "{class_name}"'
+            # )  # but actually they are all implemented in the base class as empty methods, right?
             print(f'Warning: No way to parse CST Node of type "{class_name}"')
             return cst_node
 
@@ -105,7 +108,7 @@ class NodeSelector(cst.CSTVisitor):
             if func_alias not in self.library_methods:
                 return
             module, func_name = self.library_methods[func_alias]
-            result = module.visit_method(func_name, args, kwargs)
+            result = self.call_module_method(module, func_name, args, kwargs)
 
         elif isinstance(node.func, cst.Attribute):
             attribute = self.generic_visit(node.func.value)
@@ -115,17 +118,37 @@ class NodeSelector(cst.CSTVisitor):
                     return
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
-                result = module.visit_method(func_name, args, kwargs)
+                result = self.call_module_method(module, func_name, args, kwargs)
             elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
                 func_name = node.func.attr.value
                 node = attribute
                 module = module_by_name[node.library]
-                result = module.visit_df_method(node, func_name, args, kwargs)
+                result = self.call_module_ir_method(module, node, func_name, args, kwargs)
             else:
                 print("Warning: Something strange got called: ", attribute)
 
         if result:
             return result
+
+    def call_module_method(self, module: InputModule, func_name: str, args: list, kwargs: dict) -> Node:
+        result = module.visit_call(func_name, args, kwargs)
+        if result:
+            if not result.library:
+                result.library = module.module_name
+            return result
+        raise NotImplementedError(f"Rewrite rule for '{func_name}' of '{module.module_name}' is not implemented.")
+
+    def call_module_ir_method(
+        self, module: InputModule, ir_node: IRNode, func_name: str, args: list, kwargs: dict
+    ) -> Node:
+        result = module.visit_call_on_ir_node(ir_node, func_name, args, kwargs)
+        if result:
+            if not result.library:
+                result.library = module.module_name
+            return result
+        raise NotImplementedError(
+            f"Rewrite rule for '{func_name}' on IR object for '{module.module_name}' is not implemented."
+        )
 
     def parse_Name(self, node: cst.Name) -> Optional[Node]:
         if node.value in self.variables:
