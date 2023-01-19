@@ -7,30 +7,22 @@ class PandasInput(InputModule):
     def module_name(self) -> str:
         return "pandas"
 
-    # lib methods
+    def visit_call(self, func_name: str, args: list, kwargs: dict):
+        if func_name == "read_sql":
+            return SQLNode(*args, **kwargs)
+        if func_name == "merge":
+            return JoinNode(*args, **kwargs)
 
-    def visit_read_sql(self, *args, **kwargs):
-        return SQLNode(*args, **kwargs)
-
-    def visit_merge(self, *args, **kwargs):
-        return JoinNode(*args, **kwargs)
-
-    # df methods
-
-    def visit_df_join(self, ir_node: IRNode, *args, **kwargs):
-        return JoinNode(ir_node, *args, **kwargs)
-
-    def visit_df_set_index(self, ir_node: IRNode, *args, **kwargs):
-        return SetKeyNode(ir_node, *args, **kwargs)
-
-    def visit_df_min(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "min", *args, **kwargs)
-
-    def visit_df_max(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "max", *args, **kwargs)
-
-    def visit_df_sum(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "sum", *args, **kwargs)
-
-    def visit_df_mean(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "avg", *args, **kwargs)
+    def visit_call_on_ir_node(self, ir_node: IRNode, func_name: str, args: list, kwargs: dict):
+        if func_name == "join":
+            return JoinNode(ir_node, *args, **kwargs)
+        if func_name == "set_index":
+            return SetKeyNode(ir_node, *args, **kwargs)
+        if func_name == "min":
+            return AggregationNode(ir_node, "min", *args, **kwargs)
+        if func_name == "max":
+            return AggregationNode(ir_node, "max", *args, **kwargs)
+        if func_name == "sum":
+            return AggregationNode(ir_node, "sum", *args, **kwargs)
+        if func_name == "mean":  # watch out, mean is avg
+            return AggregationNode(ir_node, "avg", *args, **kwargs)
