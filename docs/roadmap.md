@@ -19,7 +19,7 @@
 - Merge Query Generation - Done
 - Automated testing & Directory clean-up - Abdu
 - Dask - Try to fit functions into IR - Tobi
-- Pre-Post Queries - Dave
+- Pre-Post Queries - Done
 
 ## CW 4
 
