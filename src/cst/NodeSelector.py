@@ -134,7 +134,7 @@ class NodeSelector(cst.CSTVisitor):
             return result
 
     def resolve_Name(self, node: cst.Name) -> Node:
-        if not node.value in self.variables:
+        if node.value not in self.variables:
             raise UnresolvableCSTNode(f'Name ("{node.value}")')
         return self.variables[node.value]
 

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from exceptions import LibMethodUnresolved, LibMethodWithoutHandler
 from model.nodes import IRNode
 
