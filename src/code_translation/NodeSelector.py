@@ -2,10 +2,10 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import libcst as cst
-from input.inputModule import InputModule
-from input.pandas import PandasInput
-from ir.nodes import IRNode
-from libcst import CSTNode
+
+from .input.inputModule import InputModule
+from .input.pandas import PandasInput
+from .ir.nodes import IRNode
 
 input_modules = [
     PandasInput(),
@@ -13,7 +13,7 @@ input_modules = [
 
 module_by_name: dict[str, InputModule] = {module.module_name: module for module in input_modules}
 
-Node = Union[CSTNode, IRNode]
+Node = Union[cst.CSTNode, IRNode]
 
 
 class NodeSelector(cst.CSTVisitor):
@@ -25,7 +25,7 @@ class NodeSelector(cst.CSTVisitor):
     def __init__(self) -> None:
 
         self.variables: dict[str, Node] = {}
-        self.interesting_nodes: dict[CSTNode, Node] = {}
+        self.interesting_nodes: dict[cst.CSTNode, Node] = {}
 
         """Maps the library names in namespace to the responsible InputModule"""
         self.libraries: dict[str, InputModule] = {}
@@ -34,7 +34,7 @@ class NodeSelector(cst.CSTVisitor):
 
         super().__init__()
 
-    def generic_visit(self, cst_node: CSTNode) -> Node:
+    def generic_visit(self, cst_node: cst.CSTNode) -> Node:
         class_name = str(cst_node.__class__.__name__).replace("CST", "")
         method_name = f"parse_{class_name}"
 

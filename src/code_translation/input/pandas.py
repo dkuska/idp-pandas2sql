@@ -1,5 +1,5 @@
-from input.inputModule import InputModule
-from ir.nodes import AggregationNode, IRNode, JoinNode, SetKeyNode, SQLNode
+from ..ir.nodes import AggregationNode, IRNode, JoinNode, SetKeyNode, SQLNode
+from .inputModule import InputModule
 
 
 class PandasInput(InputModule):

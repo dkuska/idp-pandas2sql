@@ -1,6 +1,6 @@
 from typing import Optional
 
-from ir.nodes import IRNode
+from ..ir.nodes import IRNode
 
 
 class InputModule:
