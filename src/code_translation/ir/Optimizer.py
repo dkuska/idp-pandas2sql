@@ -1,7 +1,8 @@
 from collections import OrderedDict
 
 import libcst as cst
-from ir.nodes import DataFrameNode
+
+from .nodes import DataFrameNode
 
 
 class Optimizer:

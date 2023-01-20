@@ -1,4 +1,4 @@
-from src.hisssql import main  # noqa: E402
+from .hisssql import main
 
 if __name__ == "__main__":
     main()
