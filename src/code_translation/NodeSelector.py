@@ -2,11 +2,10 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import libcst as cst
-from libcst import CSTNode
-
 from input.inputModule import InputModule
 from input.pandas import PandasInput
-from model.nodes import IRNode
+from ir.nodes import IRNode
+from libcst import CSTNode
 
 input_modules = [
     PandasInput(),

@@ -1,5 +1,5 @@
 from src.code_manager import CodeManager
-from src.example_pipelines import pipeline_with_filter, pipeline_with_join
+from src.evaluation.pipeline_examples import pipeline_with_filter, pipeline_with_join
 
 from .conftest import given
 

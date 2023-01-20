@@ -1,8 +1,8 @@
 import libcst as cst
 
-from cst.NodeReplacer import NodeReplacer
-from cst.NodeSelector import NodeSelector
-from cst.Optimizer import Optimizer
+from .ir.Optimizer import Optimizer
+from .NodeReplacer import NodeReplacer
+from .NodeSelector import NodeSelector
 
 src = """
 import numpy
