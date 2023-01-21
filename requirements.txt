@@ -1,3 +1,4 @@
 pandas
 libcst
+autoflake
 psycopg2
