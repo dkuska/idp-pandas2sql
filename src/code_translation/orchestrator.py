@@ -22,6 +22,17 @@ sum = df2.sum()
 max = df1.max()
 
 """
+# code for dask
+"""
+import dask.dataframe as dd
+
+con1 = DBConnection()
+
+dd1 = dd.read_sql_query("SELECT * FROM table1", con1)
+dd2 = dd.read_sql_table("table2", con=con1)
+
+dd3 = dd1.merge(dd2, how='inner')
+"""
 
 
 class Orchestrator:

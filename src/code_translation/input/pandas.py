@@ -1,4 +1,4 @@
-from ..ir.nodes import AggregationNode, IRNode, JoinNode, SetKeyNode, SQLNode
+from ..ir.nodes import AggregationNode, DataFrameNode, JoinNode, SetKeyNode, SQLNode
 from .inputModule import InputModule
 
 
@@ -12,25 +12,25 @@ class PandasInput(InputModule):
     def visit_read_sql(self, *args, **kwargs):
         return SQLNode(*args, **kwargs)
 
-    def visit_merge(self, *args, **kwargs):
-        return JoinNode(*args, **kwargs)
-
     # df methods
 
-    def visit_df_join(self, ir_node: IRNode, *args, **kwargs):
-        return JoinNode(ir_node, *args, **kwargs)
+    def visit_df_join(self, df_node: DataFrameNode, *args, **kwargs):
+        return JoinNode(df_node, *args, **kwargs)
 
-    def visit_df_set_index(self, ir_node: IRNode, *args, **kwargs):
-        return SetKeyNode(ir_node, *args, **kwargs)
+    def visit_df_merge(self, df_node: DataFrameNode, *args, **kwargs):
+        return JoinNode(df_node, *args, **kwargs)
 
-    def visit_df_min(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "min", *args, **kwargs)
+    def visit_df_set_index(self, df_node: DataFrameNode, *args, **kwargs):
+        return SetKeyNode(df_node, *args, **kwargs)
 
-    def visit_df_max(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "max", *args, **kwargs)
+    def visit_df_min(self, df_node: DataFrameNode, *args, **kwargs):
+        return AggregationNode(df_node, "min", *args, **kwargs)
 
-    def visit_df_sum(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "sum", *args, **kwargs)
+    def visit_df_max(self, df_node: DataFrameNode, *args, **kwargs):
+        return AggregationNode(df_node, "max", *args, **kwargs)
 
-    def visit_df_mean(self, ir_node: IRNode, *args, **kwargs):
-        return AggregationNode(ir_node, "avg", *args, **kwargs)
+    def visit_df_sum(self, df_node: DataFrameNode, *args, **kwargs):
+        return AggregationNode(df_node, "sum", *args, **kwargs)
+
+    def visit_df_mean(self, df_node: DataFrameNode, *args, **kwargs):
+        return AggregationNode(df_node, "avg", *args, **kwargs)

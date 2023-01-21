@@ -201,7 +201,7 @@ class AggregationNode(DataFrameNode):
         if selected_columns == ["*"]:
             variable_name = "temp"
             assign_target = cst.AssignTarget(target=cst.Name(value=variable_name))
-            prequery = sql_query + " LIMIT 0"
+            prequery = self.node.sql_string + " LIMIT 0"
             attribute = cst.Name(value="columns")
             call = cst.Call(
                 func=cst.Name(value="read_sql"),
