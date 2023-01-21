@@ -2,14 +2,15 @@
 VENV_NAME=env
 VENV=$(VENV_NAME)/bin/
 
-.PHONY: create-env
-create-env: 			## Create environment and install base packages
+.PHONY: setup
+setup: 			## Create environment and install base packages
 	@echo "Creating an virtual env"
 	@python3 -m venv $(VENV_NAME)
 
 	@echo "Installing base packages"
 	@$(VENV)pip3 install pre-commit black isort flake8 pyproject-flake8 pytest
 	@$(VENV)pre-commit install-hooks
+	@code --install-extension rioj7.command-variable
 
 .PHONY: install-requirements
 install-requirements:		## Install and update requirements
