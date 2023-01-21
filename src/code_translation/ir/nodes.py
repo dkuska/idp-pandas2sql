@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import NamedTuple
 
 import libcst as cst
-from libcst import CSTNode
 
 # TODO:
 # when translating forwards the args
@@ -39,7 +38,7 @@ class DataFrameNode(IRNode):
 
 
 class SQLNode(DataFrameNode):
-    def __init__(self, sql: CSTNode, con, *args, **kwargs):
+    def __init__(self, sql: cst.CSTNode, con, *args, **kwargs):
         self.sql = sql
         self.con = con
 
@@ -130,7 +129,7 @@ class JoinNode(DataFrameNode):
 
 
 class SetKeyNode(DataFrameNode):
-    def __init__(self, node: DataFrameNode, key: CSTNode, *args, **kwargs):
+    def __init__(self, node: DataFrameNode, key: cst.CSTNode, *args, **kwargs):
         node.parent = self
 
         self.node = node

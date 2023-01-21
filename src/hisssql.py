@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 
-from orchestrator import Orchestrator
+from src.code_translation.orchestrator import Orchestrator
 
 
 def parse_file_contents(file_path: str) -> str:

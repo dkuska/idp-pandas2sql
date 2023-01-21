@@ -1,5 +1,5 @@
-from input.inputModule import InputModule
-from model.nodes import DataFrameNode, JoinNode, SQLNode
+from ..ir.nodes import DataFrameNode, JoinNode, SQLNode
+from .inputModule import InputModule
 
 
 class DaskInput(InputModule):

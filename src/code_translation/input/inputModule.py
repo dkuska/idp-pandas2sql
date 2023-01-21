@@ -1,5 +1,5 @@
-from exceptions import LibMethodUnresolved, LibMethodWithoutHandler
-from model.nodes import IRNode
+from ...exceptions import LibMethodUnresolved, LibMethodWithoutHandler
+from ..ir.nodes import IRNode
 
 
 class InputModule:

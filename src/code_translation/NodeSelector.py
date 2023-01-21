@@ -2,19 +2,21 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import libcst as cst
-from libcst import CSTNode
 
-from input.inputModule import InputModule
-from input.pandas import PandasInput
-from model.new_models import IRNode
+from ..exceptions import (
+    LibMethodUnresolved,
+    LibMethodWithoutHandler,
+    NoResolveMethod,
+    UnresolvableCSTNode,
+)
+from .input import DaskInput, InputModule, PandasInput
+from .ir.nodes import IRNode
 
-input_modules = [
-    PandasInput(),
-]
+input_modules = [PandasInput(), DaskInput()]
 
-module_by_name = {module.module_name: module for module in input_modules}
+module_by_name: dict[str, InputModule] = {module.module_name: module for module in input_modules}
 
-Node = Union[CSTNode, IRNode]
+Node = Union[cst.CSTNode, IRNode]
 
 
 class NodeSelector(cst.CSTVisitor):
@@ -26,6 +28,8 @@ class NodeSelector(cst.CSTVisitor):
     def __init__(self) -> None:
 
         self.variables: dict[str, Node] = {}
+        self.interesting_nodes: dict[cst.CSTNode, Node] = {}
+
         """Maps the library names in namespace to the responsible InputModule"""
         self.libraries: dict[str, InputModule] = {}
         """Maps the method names in namespace to the responsible InputModule and the original method name."""
@@ -33,22 +37,19 @@ class NodeSelector(cst.CSTVisitor):
 
         super().__init__()
 
-    def generic_visit(self, cst_node: CSTNode) -> Node:
-        class_name = str(cst_node.__class__.__name__).replace("CST", "")
-        method_name = f"parse_{class_name}"
+    def resolve(self, cst_node: cst.CSTNode) -> Node:
+        try:
+            class_name = str(cst_node.__class__.__name__).replace("CST", "")
+            method_name = f"resolve_{class_name}"
 
-        if not hasattr(self, method_name):
-            # raise NotImplementedError(
-            #     f'No way to parse CST Node of type "{class_name}"'
-            # )  # but actually they are all implemented in the base class as empty methods, right?
-            print(f'Warning: No way to parse CST Node of type "{class_name}"')
-            return cst_node
+            if not hasattr(self, method_name):
+                raise NoResolveMethod(class_name)
 
-        method = getattr(self, method_name)
-        ir_node = method(cst_node)
-        if ir_node == None:
+            resolve_method = getattr(self, method_name)
+            return resolve_method(cst_node)
+        except (NoResolveMethod, UnresolvableCSTNode, LibMethodWithoutHandler, LibMethodUnresolved) as e:
+            print(f"Warning: {e}")
             return cst_node
-        return ir_node
 
     def visit_Import(self, node: cst.Import):
         imported_modules = list(node.names)
@@ -86,14 +87,16 @@ class NodeSelector(cst.CSTVisitor):
         if isinstance(node.value, tuple):
             pass  # if targets and value are tuples do more complicated stuff
 
-        value_node = self.generic_visit(node.value)
+        value_node = self.resolve(node.value)
         for target_node in node.targets:
             target_name = target_node.target.value
             self.variables[target_name] = value_node
 
+        self.interesting_nodes[node] = value_node
+
         return False
 
-    def parse_Call(self, node: cst.Call) -> Optional[Node]:
+    def resolve_Call(self, node: cst.Call) -> Optional[Node]:
         args = list(self.parse_NonKwArg(arg) for arg in node.args if not arg.keyword)
         kwargs = dict(self.parse_KwArg(arg) for arg in node.args if arg.keyword)
 
@@ -104,66 +107,49 @@ class NodeSelector(cst.CSTVisitor):
             if func_alias not in self.library_methods:
                 return
             module, func_name = self.library_methods[func_alias]
-            result = self.call_module_method(module, func_name, args, kwargs)
+            result = module.resolve_call(func_name, False, *args, **kwargs)
 
         elif isinstance(node.func, cst.Attribute):
-            attribute = self.generic_visit(node.func.value)
+            attribute = self.resolve(node.func.value)
 
             if isinstance(attribute, cst.Name):  # calls to function accessed via module. e.g. pd.read_sql
                 if attribute.value not in self.libraries:
                     return
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
-                result = self.call_module_method(module, func_name, args, kwargs)
+                result = module.resolve_call(func_name, False, *args, **kwargs)
             elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
-                func_name = node.func.attr.value
+                method_name = node.func.attr.value
                 node = attribute
                 module = module_by_name[node.library]
-                result = self.call_module_ir_method(module, node, func_name, args, kwargs)
+                result = module.resolve_call(method_name, True, node, *args, **kwargs)
             else:
                 print("Warning: Something strange got called: ", attribute)
 
         if result:
             return result
 
-    def call_module_method(self, module: InputModule, func_name: str, args: list, kwargs: dict) -> Node:
-        result = module.visit_call(func_name, args, kwargs)
-        if result:
-            if not result.library:
-                result.library = module.module_name
-            return result
-        raise NotImplementedError(f"Rewrite rule for '{func_name}' of '{module.module_name}' is not implemented.")
+    def resolve_Name(self, node: cst.Name) -> Node:
+        if node.value not in self.variables:
+            raise UnresolvableCSTNode(f'Name ("{node.value}")')
+        return self.variables[node.value]
 
-    def call_module_ir_method(
-        self, module: InputModule, ir_node: IRNode, func_name: str, args: list, kwargs: dict
-    ) -> Node:
-        result = module.visit_call_on_ir_node(ir_node, func_name, args, kwargs)
-        if result:
-            if not result.library:
-                result.library = module.module_name
-            return result
-        raise NotImplementedError(
-            f"Rewrite rule for '{func_name}' on IR object for '{module.module_name}' is not implemented."
-        )
+    def resolve_Element(self, node: cst.Element) -> Optional[Node]:
+        return self.resolve(node.value)
 
-    def parse_Name(self, node: cst.Name) -> Optional[Node]:
-        if node.value in self.variables:
-            return self.variables[node.value]
-        return node
+    def resolve_Tuple(self, node: cst.Tuple) -> Sequence:
+        ret_values = []
+        for element in node.elements:
+            ret_values.append(self.resolve(element))
+        return tuple(ret_values)
+
+    def resolve_SimpleString(self, node: cst.SimpleString) -> str:
+        return node.value
 
     def parse_NonKwArg(self, node: cst.Arg) -> Node:
-        arg_value = self.generic_visit(node.value)
+        arg_value = self.resolve(node.value)
         return arg_value
 
     def parse_KwArg(self, node: cst.Arg) -> tuple[str, Node]:
-        arg_value = self.generic_visit(node.value)
+        arg_value = self.resolve(node.value)
         return node.keyword.value, arg_value
-
-    def parse_Element(self, node: cst.Element) -> Optional[Node]:
-        return self.generic_visit(node.value)
-
-    def parse_Tuple(self, node: cst.Tuple) -> Sequence:
-        ret_values = []
-        for element in node.elements:
-            ret_values.append(self.generic_visit(element))
-        return tuple(ret_values)
