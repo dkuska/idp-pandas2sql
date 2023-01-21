@@ -4,6 +4,12 @@ from typing import Optional, Union
 import libcst as cst
 from libcst import CSTNode
 
+from exceptions import (
+    LibMethodUnresolved,
+    LibMethodWithoutHandler,
+    NoResolveMethod,
+    UnresolvableCSTNode,
+)
 from input import DaskInput, InputModule, PandasInput
 from model.nodes import IRNode
 
@@ -32,19 +38,19 @@ class NodeSelector(cst.CSTVisitor):
 
         super().__init__()
 
-    def generic_visit(self, cst_node: CSTNode) -> Node:
-        class_name = str(cst_node.__class__.__name__).replace("CST", "")
-        method_name = f"parse_{class_name}"
+    def resolve(self, cst_node: CSTNode) -> Node:
+        try:
+            class_name = str(cst_node.__class__.__name__).replace("CST", "")
+            method_name = f"resolve_{class_name}"
 
-        if not hasattr(self, method_name):
-            print(f'Warning: No way to parse CST Node of type "{class_name}"')
-            return cst_node
+            if not hasattr(self, method_name):
+                raise NoResolveMethod(class_name)
 
-        method = getattr(self, method_name)
-        ir_node = method(cst_node)
-        if ir_node is None:
+            resolve_method = getattr(self, method_name)
+            return resolve_method(cst_node)
+        except (NoResolveMethod, UnresolvableCSTNode, LibMethodWithoutHandler, LibMethodUnresolved) as e:
+            print(f"Warning: {e}")
             return cst_node
-        return ir_node
 
     def visit_Import(self, node: cst.Import):
         imported_modules = list(node.names)
@@ -82,7 +88,7 @@ class NodeSelector(cst.CSTVisitor):
         if isinstance(node.value, tuple):
             pass  # if targets and value are tuples do more complicated stuff
 
-        value_node = self.generic_visit(node.value)
+        value_node = self.resolve(node.value)
         for target_node in node.targets:
             target_name = target_node.target.value
             self.variables[target_name] = value_node
@@ -91,7 +97,7 @@ class NodeSelector(cst.CSTVisitor):
 
         return False
 
-    def parse_Call(self, node: cst.Call) -> Optional[Node]:
+    def resolve_Call(self, node: cst.Call) -> Optional[Node]:
         args = list(self.parse_NonKwArg(arg) for arg in node.args if not arg.keyword)
         kwargs = dict(self.parse_KwArg(arg) for arg in node.args if arg.keyword)
 
@@ -102,49 +108,49 @@ class NodeSelector(cst.CSTVisitor):
             if func_alias not in self.library_methods:
                 return
             module, func_name = self.library_methods[func_alias]
-            result = module.visit_function(func_name, args, kwargs)
+            result = module.resolve_call(func_name, False, *args, **kwargs)
 
         elif isinstance(node.func, cst.Attribute):
-            attribute = self.generic_visit(node.func.value)
+            attribute = self.resolve(node.func.value)
 
             if isinstance(attribute, cst.Name):  # calls to function accessed via module. e.g. pd.read_sql
                 if attribute.value not in self.libraries:
                     return
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
-                result = module.visit_function(func_name, args, kwargs)
+                result = module.resolve_call(func_name, False, *args, **kwargs)
             elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
                 method_name = node.func.attr.value
                 node = attribute
                 module = module_by_name[node.library]
-                result = module.visit_df_method(node, method_name, args, kwargs)
+                result = module.resolve_call(method_name, True, node, *args, **kwargs)
             else:
                 print("Warning: Something strange got called: ", attribute)
 
         if result:
             return result
 
-    def parse_Name(self, node: cst.Name) -> Optional[Node]:
-        if node.value in self.variables:
-            return self.variables[node.value]
-        return node
+    def resolve_Name(self, node: cst.Name) -> Node:
+        if node.value not in self.variables:
+            raise UnresolvableCSTNode(f'Name ("{node.value}")')
+        return self.variables[node.value]
+
+    def resolve_Element(self, node: cst.Element) -> Optional[Node]:
+        return self.resolve(node.value)
+
+    def resolve_Tuple(self, node: cst.Tuple) -> Sequence:
+        ret_values = []
+        for element in node.elements:
+            ret_values.append(self.resolve(element))
+        return tuple(ret_values)
+
+    def resolve_SimpleString(self, node: cst.SimpleString) -> str:
+        return node.value
 
     def parse_NonKwArg(self, node: cst.Arg) -> Node:
-        arg_value = self.generic_visit(node.value)
+        arg_value = self.resolve(node.value)
         return arg_value
 
     def parse_KwArg(self, node: cst.Arg) -> tuple[str, Node]:
-        arg_value = self.generic_visit(node.value)
+        arg_value = self.resolve(node.value)
         return node.keyword.value, arg_value
-
-    def parse_Element(self, node: cst.Element) -> Optional[Node]:
-        return self.generic_visit(node.value)
-
-    def parse_Tuple(self, node: cst.Tuple) -> Sequence:
-        ret_values = []
-        for element in node.elements:
-            ret_values.append(self.generic_visit(element))
-        return tuple(ret_values)
-
-    def parse_SimpleString(self, node: cst.SimpleString) -> str:
-        return node.value
