@@ -57,7 +57,10 @@ class SQLNode(DataFrameNode):
         else:  # TODO: Needs awareness of used alias
             func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
 
-        args = [cst.Arg(value=cst.SimpleString(value='"' + self.sql_string + '"'))]
+        args = [
+            cst.Arg(value=cst.SimpleString(value='"' + self.sql_string + '"')),
+            cst.Arg(value=self.con),
+        ]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))
 
@@ -123,7 +126,7 @@ class JoinNode(DataFrameNode):
             func = cst.Name(value="read_sql")
         else:  # TODO: Needs awareness of used alias
             func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
-        args = [cst.Arg(value=cst.SimpleString(value=query_str))]
+        args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.left.con)]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))
 
@@ -136,6 +139,10 @@ class SetKeyNode(DataFrameNode):
         self.key = key
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def con(self):
+        return self.node.con
 
     def to_code(self) -> str:
         return f"({self.node.to_code()}).set_key({self.key})"
@@ -161,6 +168,10 @@ class AggregationNode(DataFrameNode):
         self.aggregation = aggregation
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def con(self):
+        return self.node.con
 
     @property
     def sql_string(self) -> str:
@@ -205,7 +216,7 @@ class AggregationNode(DataFrameNode):
             attribute = cst.Name(value="columns")
             call = cst.Call(
                 func=cst.Name(value="read_sql"),
-                args=[cst.Arg(value=str_code_to_cst('"' + prequery + '"'))],
+                args=[cst.Arg(value=str_code_to_cst('"' + prequery + '"')), cst.Arg(value=self.con)],
             )
             precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
             sql_query = self.node.sql_string.replace(
@@ -214,7 +225,10 @@ class AggregationNode(DataFrameNode):
                 1,
             )
 
-        code = cst.Call(func=cst.Name(value="read_sql"), args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"'))])
+        code = cst.Call(
+            func=cst.Name(value="read_sql"),
+            args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
+        )
         return CSTTranslation(code=code, precode=precode)
 
 

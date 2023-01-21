@@ -48,6 +48,7 @@ class NodeSelector(cst.CSTVisitor):
             resolve_method = getattr(self, method_name)
             return resolve_method(cst_node)
         except (NoResolveMethod, UnresolvableCSTNode, LibMethodWithoutHandler, LibMethodUnresolved) as e:
+            print(type(e))
             print(f"Warning: {e}")
             return cst_node
 
@@ -99,13 +100,14 @@ class NodeSelector(cst.CSTVisitor):
     def resolve_Call(self, node: cst.Call) -> Optional[Node]:
         args = list(self.parse_NonKwArg(arg) for arg in node.args if not arg.keyword)
         kwargs = dict(self.parse_KwArg(arg) for arg in node.args if arg.keyword)
-
         result = None
 
         if isinstance(node.func, cst.Name):  # calls to directly imported library function. e.g. read_sql
             func_alias = node.func.value
             if func_alias not in self.library_methods:
-                return
+                # TODO: Figure this out so that the connection doesnt keep getting replicated
+                result = self.resolve(node.func)
+                return node
             module, func_name = self.library_methods[func_alias]
             result = module.resolve_call(func_name, False, *args, **kwargs)
 
@@ -114,7 +116,9 @@ class NodeSelector(cst.CSTVisitor):
 
             if isinstance(attribute, cst.Name):  # calls to function accessed via module. e.g. pd.read_sql
                 if attribute.value not in self.libraries:
-                    return
+                    # TODO: Figure this out so that the connection doesnt keep getting replicated
+                    result = self.resolve(node.func.value)
+                    return node
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
                 result = module.resolve_call(func_name, False, *args, **kwargs)
@@ -131,6 +135,8 @@ class NodeSelector(cst.CSTVisitor):
 
     def resolve_Name(self, node: cst.Name) -> Node:
         if node.value not in self.variables:
+            # TODO: Figure this out aswell
+            return node
             raise UnresolvableCSTNode(f'Name ("{node.value}")')
         return self.variables[node.value]
 
