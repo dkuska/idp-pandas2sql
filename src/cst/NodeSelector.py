@@ -4,13 +4,10 @@ from typing import Optional, Union
 import libcst as cst
 from libcst import CSTNode
 
-from input.inputModule import InputModule
-from input.pandas import PandasInput
+from input import DaskInput, InputModule, PandasInput
 from model.nodes import IRNode
 
-input_modules = [
-    PandasInput(),
-]
+input_modules = [PandasInput(), DaskInput()]
 
 module_by_name: dict[str, InputModule] = {module.module_name: module for module in input_modules}
 
