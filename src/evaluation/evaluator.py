@@ -15,7 +15,7 @@ class Evaluator:
         self.execution_time = None
         self.results = None
 
-    def evaluate_function(self, code: PipelineCode) -> int:
+    def evaluate_function(self, code: PipelineCode) -> float:
         start = time.time()
         eval(code)
         end = time.time()
@@ -26,7 +26,7 @@ class Evaluator:
     def evaluate(self):
         print(f"Evaluating {self.pipeline.name.upper()}:")
         unoptimized_execution_time = self.evaluate_function(self.pipeline.code)
-        optimized_execution_time = self.evaluate_function(self.pipeline.unoptimized_code)
+        optimized_execution_time = self.evaluate_function(self.pipeline.optimized_code)
         print(f"Unoptimized code execution time: {unoptimized_execution_time:.2f}s")
         print(f"optimized code execution time: {optimized_execution_time:.2f}s")
         print("----------------")
