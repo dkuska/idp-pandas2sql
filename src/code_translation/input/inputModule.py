@@ -12,6 +12,10 @@ class InputModule:
         """Return every symbol that is imported when importing * from the library"""
         return []
 
+    @property
+    def sql_access_method(self) -> str:
+        pass
+
     def resolve_call(self, method_name: str, df: bool, *args: list, **kwargs: dict) -> IRNode:
         visitor_method_name = f"visit_{'df_' if df else ''}{method_name}"
 

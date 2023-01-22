@@ -14,10 +14,11 @@ class Optimizer:
     Passing both are required, because the IR-Nodes don't currently have a reference to their target.
     """
 
-    def __init__(self, variables, interesting_nodes) -> None:
+    def __init__(self, variables, interesting_nodes, sql_access_methods) -> None:
         self.variables = variables
         self.interesting_nodes = interesting_nodes
         self.optimized_nodes = OrderedDict()
+        self.sql_access_methods = sql_access_methods
         self.create_IR()
 
     def create_IR(self):
@@ -36,7 +37,11 @@ class Optimizer:
             if isinstance(ir_node, DataFrameNode):
                 for target, value in self.variables.items():
                     if ir_node == value:
-                        cst_translation = ir_node.to_cst_translation()
+                        if ir_node.library in self.sql_access_methods:
+                            sql_access_method = self.sql_access_methods[ir_node.library]
+                        else:
+                            raise Exception(f"No sql access method for {ir_node.library}")
+                        cst_translation = ir_node.to_cst_translation(sql_access_method)
                         # TODO: Needs awareness of assignment name
                         targets = [cst.AssignTarget(target=cst.Name(target))]
                         assign = cst.Assign(targets=targets, value=cst_translation.code)

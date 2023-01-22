@@ -7,6 +7,10 @@ class DaskInput(InputModule):
     def module_name(self) -> str:
         return "dask.dataframe"
 
+    @property
+    def sql_access_method(self) -> str:
+        return "read_sql_query"
+
     # lib methods
 
     def visit_read_sql_query(self, *args, **kwargs):

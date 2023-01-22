@@ -52,6 +52,24 @@ class NodeSelector(cst.CSTVisitor):
             print(f"Warning: {e}")
             return cst_node
 
+    def get_sql_access_methods(self):
+        # For each InputModule.module_name, get name for sql access
+        access_methods: dict[str, cst.CSTNode] = {}
+
+        # For each library get the default sql access method
+        for library_alias, input_module in self.libraries.items():
+            access_methods[input_module.module_name] = cst.Attribute(
+                value=cst.Name(value=library_alias), attr=cst.Name(value=input_module.sql_access_method)
+            )
+
+        # If this method is directly imported without alias, use that one
+        for library_method, (input_module, _) in self.library_methods.items():
+
+            if input_module.module_name in access_methods and library_method == input_module.sql_access_method:
+                access_methods[input_module.module_name] = cst.Name(value=library_method)
+
+        return access_methods
+
     def visit_Import(self, node: cst.Import):
         imported_modules = list(node.names)
 

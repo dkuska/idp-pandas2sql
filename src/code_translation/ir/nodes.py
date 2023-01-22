@@ -51,12 +51,8 @@ class SQLNode(DataFrameNode):
     def to_code(self) -> str:
         return f'read_sql("{self.sql_string}", SOME CON)'
 
-    def to_cst_translation(self) -> CSTTranslation:
-        if True:
-            func = cst.Name(value="read_sql")
-        else:  # TODO: Needs awareness of used alias
-            func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
-
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
+        func = sql_access_method
         args = [
             cst.Arg(value=cst.SimpleString(value='"' + self.sql_string + '"')),
             cst.Arg(value=self.con),
@@ -86,7 +82,7 @@ class JoinNode(DataFrameNode):
         else:
             return f"({self.left.to_code()}).join({self.right.to_code()})"
 
-    def to_cst_translation(self) -> CSTTranslation:
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
@@ -122,10 +118,7 @@ class JoinNode(DataFrameNode):
         query_str = '"' + query_str + '"'
 
         # Build cst.Assign Object
-        if True:
-            func = cst.Name(value="read_sql")
-        else:  # TODO: Needs awareness of used alias
-            func = cst.Attribute(value=cst.Name(value=self.pandas_alias), attr=cst.Name(value="read_sql"))
+        func = sql_access_method
         args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.left.con)]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))
@@ -204,7 +197,7 @@ class AggregationNode(DataFrameNode):
             )
         return f'read_sql("{self.sql_string}", SOME CONN)'
 
-    def to_cst_translation(self) -> CSTTranslation:
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         selected_columns = selected_columns_in_query(self.node.sql_string)
         precode = []
         sql_query = self.sql_string
@@ -215,7 +208,7 @@ class AggregationNode(DataFrameNode):
             prequery = self.node.sql_string + " LIMIT 0"
             attribute = cst.Name(value="columns")
             call = cst.Call(
-                func=cst.Name(value="read_sql"),
+                func=sql_access_method,
                 args=[cst.Arg(value=str_code_to_cst('"' + prequery + '"')), cst.Arg(value=self.con)],
             )
             precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
@@ -226,7 +219,7 @@ class AggregationNode(DataFrameNode):
             )
 
         code = cst.Call(
-            func=cst.Name(value="read_sql"),
+            func=sql_access_method,
             args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
         )
         return CSTTranslation(code=code, precode=precode)
