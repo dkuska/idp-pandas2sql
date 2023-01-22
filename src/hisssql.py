@@ -1,7 +1,5 @@
 from argparse import ArgumentParser
 
-import autoflake
-
 from src.code_translation.orchestrator import Orchestrator
 
 
@@ -34,12 +32,6 @@ def main():
     print(src)
 
     new_src = Orchestrator.transform(src)
-
-    # Take care of linting with autoflake
-    # TODO: This does not exactly work as expected, as the requirements for 'unused variables' seem a little weird
-    new_src = autoflake.fix_code(
-        new_src, remove_all_unused_imports=True, remove_duplicate_keys=True, remove_unused_variables=True
-    )
 
     print("New Source:")  # DEBUG
     print(new_src)
