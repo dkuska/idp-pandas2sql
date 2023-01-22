@@ -16,7 +16,6 @@ def write_new_file_contents(new_file_path: str, new_contents):
 def parse_args():
     parser = ArgumentParser(description="Optimize SQL based Pandas operations for Joins and Aggregations")
     parser.add_argument("filepath", type=str, help="Path to the file you want to translate")
-    # TODO: Implement these
     parser.add_argument(
         "--inplace", type=bool, default=False, help="Whether or not to replace the file contents inplace or "
     )

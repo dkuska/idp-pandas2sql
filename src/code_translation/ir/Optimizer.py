@@ -42,7 +42,6 @@ class Optimizer:
                         else:
                             raise Exception(f"No sql access method for {ir_node.library}")
                         cst_translation = ir_node.to_cst_translation(sql_access_method)
-                        # TODO: Needs awareness of assignment name
                         targets = [cst.AssignTarget(target=cst.Name(target))]
                         assign = cst.Assign(targets=targets, value=cst_translation.code)
                         new_nodes.extend([cst.SimpleStatementLine(body=[node]) for node in cst_translation.precode])
