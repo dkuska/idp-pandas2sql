@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import libcst as cst
 
@@ -38,7 +38,7 @@ class DataFrameNode(IRNode):
 
 
 class SQLNode(DataFrameNode):
-    def __init__(self, sql: cst.CSTNode, con, *args, **kwargs):
+    def __init__(self, sql: str, con, *args, **kwargs):
         self.sql = sql
         self.con = con
 
@@ -73,7 +73,7 @@ class JoinNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self) -> str:
+    def sql_string(self) -> Optional[str]:
         if self.left.sql_string and self.right.sql_string:  # check if two connections are the same
             return f"'SELECT * FROM ({self.left.sql_string}) JOIN ({self.right.sql_string})')"
 
@@ -93,18 +93,18 @@ class JoinNode(DataFrameNode):
             left_sql = self.left.node.sql_string.replace('"', "")
             left_key = self.left.key.replace('"', "").replace("'", "")
         else:
-            pass
+            return None
 
         # Extract query and additional information from right node
         right_set_key = False
-        if isinstance(self.left, SQLNode):
+        if isinstance(self.right, SQLNode):
             right_sql = self.right.sql_string.replace('"', "")
-        elif isinstance(self.left, SetKeyNode):
+        elif isinstance(self.right, SetKeyNode):
             right_set_key = True
             right_sql = self.right.node.sql_string.replace('"', "")
             right_key = self.right.key.replace('"', "").replace("'", "")  # TODO: Implement for more complex types
         else:
-            pass
+            return None
 
         # Build query string
         if left_set_key or right_set_key:
@@ -163,7 +163,7 @@ class AggregationNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self) -> str:
+    def sql_string(self) -> Optional[str]:
         if self.node.sql_string:
             query = self.node.sql_string
             selected_columns = selected_columns_in_query(query)
@@ -201,11 +201,10 @@ class AggregationNode(DataFrameNode):
         if selected_columns == ["*"]:
             variable_name = "temp"
             assign_target = cst.AssignTarget(target=cst.Name(value=variable_name))
-            prequery = self.node.sql_string + " LIMIT 0"
             attribute = cst.Name(value="columns")
             call = cst.Call(
                 func=cst.Name(value="read_sql"),
-                args=[cst.Arg(value=str_code_to_cst('"' + prequery + '"'))],
+                args=[cst.Arg(value=str_code_to_cst(f'"{self.node.sql_string} LIMIT 0"'))],
             )
             precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
             sql_query = self.node.sql_string.replace(
