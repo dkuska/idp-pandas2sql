@@ -78,7 +78,11 @@ class Orchestrator:
         #         print()
 
         # Create Optimizer with information from NodeSelector
-        optimizer = Optimizer(variables=node_selector.variables, interesting_nodes=node_selector.interesting_nodes)
+        optimizer = Optimizer(
+            variables=node_selector.variables,
+            interesting_nodes=node_selector.interesting_nodes,
+            sql_access_methods=node_selector.get_sql_access_methods(),
+        )
         optimizer.optimize()
         optimizer.map_old_to_new_nodes()
         old_nodes_new_nodes = optimizer.get_optimized_nodes()

@@ -7,6 +7,10 @@ class PandasInput(InputModule):
     def module_name(self) -> str:
         return "pandas"
 
+    @property
+    def sql_access_method(self) -> str:
+        return "read_sql"
+
     # lib methods
 
     def visit_read_sql(self, *args, **kwargs):
