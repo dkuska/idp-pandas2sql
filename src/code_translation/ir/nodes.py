@@ -154,6 +154,7 @@ class AggregationNode(DataFrameNode):
     def con(self):
         return self.node.con
 
+    @property
     def sql_string(self) -> Optional[str]:
         if self.node.sql_string:
             query = self.node.sql_string
