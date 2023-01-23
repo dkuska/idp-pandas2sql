@@ -1,42 +1,38 @@
-from collections import OrderedDict
-
 import libcst as cst
 
+from .ir.nodes import DataFrameNode
+from .NodeSelector import NodeSelector
 
-class NodeReplacer:
-    """
-    The function of this is to replace Nodes in the old CST with the new nodes obtained through our optimizations.
-    """
 
-    def __init__(self) -> None:
-        pass
+class NodeReplacer(cst.CSTTransformer):
+    def __init__(self, nodeSelector: NodeSelector) -> None:
+        self.nodeSelector = nodeSelector
 
-    def replace(self, src_tree: cst.Module, old_new_nodes: OrderedDict) -> cst.Module:
-        new_tree_body = []
-        # Iterate over old CST
-        for src_node in src_tree.body:
-            node_replaced = False
-            node_replacement = None
+    def leave_Assign(self, original_node: cst.Assign, updated_node: cst.Assign):
+        if not original_node in self.nodeSelector.interesting_nodes:
+            return updated_node
+        ir_node = self.nodeSelector.interesting_nodes[original_node]
 
-            # TODO: This is a quick fix, investigate if src_node.body can contain multiple statements...
-            if src_node.body[0] in old_new_nodes:
-                node_replaced = True
-                node_replacement = old_new_nodes[src_node.body[0]]
+        if not isinstance(ir_node, DataFrameNode):
+            # not so interesting after all
+            print(original_node)
+            print(updated_node)
+            return updated_node
 
-                if node_replacement is None:  # Also a quick fix...
-                    node_replaced = False
+        sql_access_methods = self.nodeSelector.get_sql_access_methods()
+        if ir_node.library not in sql_access_methods:
+            raise Exception(f"No sql access method for {ir_node.library}")
+        sql_access_method = sql_access_methods[ir_node.library]
 
-            if node_replaced:
-                new_tree_body.extend(node_replacement)
-            else:
-                new_tree_body.append(src_node)
+        cst_translation = ir_node.to_cst_translation(sql_access_method)
 
-        return cst.Module(
-            body=new_tree_body,
-            header=src_tree.header,
-            footer=src_tree.footer,
-            encoding=src_tree.encoding,
-            default_indent=src_tree.default_indent,
-            default_newline=src_tree.default_newline,
-            has_trailing_newline=src_tree.has_trailing_newline,
-        )
+        updated_node = updated_node.with_changes(value=cst_translation.code)
+        pre_code = cst_translation.precode
+        post_code = cst_translation.postcode
+
+        return cst.FlattenSentinel(pre_code + [updated_node] + post_code)
+
+    def leave_SimpleStatementLine(self, original_node: cst.SimpleStatementLine, updated_node: cst.SimpleStatementLine):
+        if len(updated_node.body) == 1:
+            return updated_node
+        return cst.FlattenSentinel(cst.SimpleStatementLine([statement]) for statement in updated_node.body)

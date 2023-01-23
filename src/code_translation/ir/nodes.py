@@ -36,6 +36,10 @@ class DataFrameNode(IRNode):
     def sql_string(self):
         pass
 
+    @abstractmethod
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
+        pass
+
 
 class SQLNode(DataFrameNode):
     def __init__(self, sql: str, con, *args, **kwargs):

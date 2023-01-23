@@ -1,6 +1,5 @@
 import libcst as cst
 
-from .ir.Optimizer import Optimizer
 from .NodeReplacer import NodeReplacer
 from .NodeSelector import NodeSelector
 
@@ -69,27 +68,9 @@ class Orchestrator:
         node_selector = NodeSelector()
         src_tree.visit(node_selector)
 
-        # # nodes contain all visited statements in order
-        # for variable, node in node_selector.variables.items():
-        #     print(variable, type(node), end=" ")
-        #     if isinstance(node, DataFrameNode):
-        #         print(node.to_code())
-        #     else:
-        #         print()
-
-        # Create Optimizer with information from NodeSelector
-        optimizer = Optimizer(
-            variables=node_selector.variables,
-            interesting_nodes=node_selector.interesting_nodes,
-            sql_access_methods=node_selector.get_sql_access_methods(),
-        )
-        optimizer.optimize()
-        optimizer.map_old_to_new_nodes()
-        old_nodes_new_nodes = optimizer.get_optimized_nodes()
-
         # Create new tree with old_nodes_new_nodes
-        node_replacer = NodeReplacer()
-        new_tree = node_replacer.replace(src_tree, old_nodes_new_nodes)
+        node_replacer = NodeReplacer(node_selector)
+        new_tree = src_tree.visit(node_replacer)
 
         # Export new_code
         new_src = new_tree.code
