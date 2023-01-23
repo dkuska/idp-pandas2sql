@@ -15,8 +15,6 @@ class NodeReplacer(cst.CSTTransformer):
 
         if not isinstance(ir_node, DataFrameNode):
             # not so interesting after all
-            print(original_node)
-            print(updated_node)
             return updated_node
 
         sql_access_methods = self.nodeSelector.get_sql_access_methods()
@@ -33,6 +31,10 @@ class NodeReplacer(cst.CSTTransformer):
         return cst.FlattenSentinel(pre_code + [updated_node] + post_code)
 
     def leave_SimpleStatementLine(self, original_node: cst.SimpleStatementLine, updated_node: cst.SimpleStatementLine):
+        """Because of the way the FlattenSentinel works the pre and post code
+        would all be contained in one big oneliner that is seperated by semicolons.
+        This isn't really pretty so this override splits these oneliners into
+        multiple seperate lines."""
         if len(updated_node.body) == 1:
             return updated_node
         return cst.FlattenSentinel(cst.SimpleStatementLine([statement]) for statement in updated_node.body)
