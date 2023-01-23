@@ -14,21 +14,21 @@
 - Orchestrator Source File -> Code -> Optimize -> New Code -> New Source File - Done
   - Question @ Ilin: Create new file with optimized code or just run optimized code
 
-- Code Generation clean-up (Integration of formatting) - Dave
-- Keep pandas alias and function name when creating new code - Dave
+- Code Generation clean-up (Integration of formatting) - TODO: Dave
+- Keep pandas alias and function name when creating new code - Done
 - Aggregation Query Generation - Done
 - Merge Query Generation - Done
-- Automated testing & Directory clean-up - Abdu
-- Dask - Try to fit functions into IR - Tobi
+- Automated testing & Directory clean-up - Done
+- Dask - Try to fit functions into IR - Done
 - Pre-Post Queries - Done
 
 ## CW 4
 
-- IR important Parameters
-- Linting/Deletion of unused nodes
-- Aggregation Query Generation
-- Creation of Test-Cases for Source Transformation
-- Output Modules
+- IR important Parameters - TODO
+- Linting/Deletion of unused nodes - TODO: Dave
+- Aggregation Query Generation - Done
+- Creation of Test-Cases for Source Transformation - TODO
+- Output Modules - TODO: Tobi
 
 ## CW 5
 
