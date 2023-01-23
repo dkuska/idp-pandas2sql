@@ -123,9 +123,7 @@ class NodeSelector(cst.CSTVisitor):
         if isinstance(node.func, cst.Name):  # calls to directly imported library function. e.g. read_sql
             func_alias = node.func.value
             if func_alias not in self.library_methods:
-                # TODO: Figure this out so that the connection doesnt keep getting replicated
-                result = self.resolve(node.func)
-                return node
+                raise UnresolvableCSTNode(f'Name ("{node.func.value}")')
             module, func_name = self.library_methods[func_alias]
             result = module.resolve_call(func_name, False, *args, **kwargs)
 
@@ -134,9 +132,7 @@ class NodeSelector(cst.CSTVisitor):
 
             if isinstance(attribute, cst.Name):  # calls to function accessed via module. e.g. pd.read_sql
                 if attribute.value not in self.libraries:
-                    # TODO: Figure this out so that the connection doesnt keep getting replicated
-                    result = self.resolve(node.func.value)
-                    return node
+                    raise UnresolvableCSTNode(f'Attribute ("{attribute.value}")')
                 module = self.libraries[attribute.value]
                 func_name = node.func.attr.value
                 result = module.resolve_call(func_name, False, *args, **kwargs)
@@ -153,8 +149,6 @@ class NodeSelector(cst.CSTVisitor):
 
     def resolve_Name(self, node: cst.Name) -> Node:
         if node.value not in self.variables:
-            # TODO: Figure this out aswell
-            return node
             raise UnresolvableCSTNode(f'Name ("{node.value}")')
         return self.variables[node.value]
 
