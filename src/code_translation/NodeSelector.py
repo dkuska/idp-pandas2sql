@@ -28,11 +28,10 @@ class NodeSelector(cst.CSTVisitor):
     def __init__(self) -> None:
 
         self.variables: dict[str, Node] = {}
-        self.interesting_nodes: dict[cst.CSTNode, Node] = {}
-
-        """Maps the library names in namespace to the responsible InputModule"""
+        self.interesting_nodes: dict[cst.Assign, Node] = {}
+        # Maps the library names in namespace to the responsible InputModule
         self.libraries: dict[str, InputModule] = {}
-        """Maps the method names in namespace to the responsible InputModule and the original method name."""
+        # Maps the method names in namespace to the responsible InputModule and the original method name.
         self.library_methods: dict[str, tuple[InputModule, str]] = {}
 
         super().__init__()
@@ -138,9 +137,10 @@ class NodeSelector(cst.CSTVisitor):
                 result = module.resolve_call(func_name, False, *args, **kwargs)
             elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
                 method_name = node.func.attr.value
-                node = attribute
-                module = module_by_name[node.library]
-                result = module.resolve_call(method_name, True, node, *args, **kwargs)
+                if not attribute.library:
+                    raise Exception("Library of IRNode is not set.")
+                module = module_by_name[attribute.library]
+                result = module.resolve_call(method_name, True, attribute, *args, **kwargs)
             else:
                 print("Warning: Something strange got called: ", attribute)
 
