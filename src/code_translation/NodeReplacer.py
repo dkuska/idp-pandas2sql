@@ -5,14 +5,16 @@ from .NodeSelector import NodeSelector
 
 
 class NodeReplacer(cst.CSTTransformer):
-    def __init__(self, nodeSelector: NodeSelector) -> None:
+    nodeSelector: NodeSelector
+
+    def __init__(self, nodeSelector: NodeSelector):
         self.nodeSelector = nodeSelector
 
     def leave_Assign(self, original_node: cst.Assign, updated_node: cst.Assign):
-        if not original_node in self.nodeSelector.interesting_nodes:
+        if original_node not in self.nodeSelector.interesting_nodes:
             return updated_node
-        ir_node = self.nodeSelector.interesting_nodes[original_node]
 
+        ir_node = self.nodeSelector.interesting_nodes[original_node]
         if not isinstance(ir_node, DataFrameNode):
             # not so interesting after all
             return updated_node
@@ -32,9 +34,9 @@ class NodeReplacer(cst.CSTTransformer):
 
     def leave_SimpleStatementLine(self, original_node: cst.SimpleStatementLine, updated_node: cst.SimpleStatementLine):
         """Because of the way the FlattenSentinel works the pre and post code
-        would all be contained in one big oneliner that is seperated by semicolons.
-        This isn't really pretty so this override splits these oneliners into
-        multiple seperate lines."""
+        would all be contained in one big one-liner that is separated by semicolons.
+        This isn't really pretty so this override splits these one-liners into
+        multiple separate lines."""
         if len(updated_node.body) == 1:
             return updated_node
         return cst.FlattenSentinel(cst.SimpleStatementLine([statement]) for statement in updated_node.body)

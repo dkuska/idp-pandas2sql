@@ -20,6 +20,9 @@ class CSTTranslation(NamedTuple):
 
 
 class IRNode(ABC):
+    parent: Optional["IRNode"]
+    library: Optional[str]
+
     def __init__(self, parent=None, library=None, *args, **kwargs):
         self.parent = parent
         self.library = library

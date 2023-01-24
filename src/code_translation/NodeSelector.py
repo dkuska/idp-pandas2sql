@@ -138,9 +138,10 @@ class NodeSelector(cst.CSTVisitor):
                 result = module.resolve_call(func_name, False, *args, **kwargs)
             elif isinstance(attribute, IRNode):  # calls to IR nodes. e.g. df.join
                 method_name = node.func.attr.value
-                node = attribute
-                module = module_by_name[node.library]
-                result = module.resolve_call(method_name, True, node, *args, **kwargs)
+                if not attribute.library:
+                    raise Exception("Library of IRNode is not set.")
+                module = module_by_name[attribute.library]
+                result = module.resolve_call(method_name, True, attribute, *args, **kwargs)
             else:
                 print("Warning: Something strange got called: ", attribute)
 
