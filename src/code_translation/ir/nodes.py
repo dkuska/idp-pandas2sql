@@ -8,7 +8,7 @@ import libcst as cst
 # replace SOME CONN with the actual conn
 
 
-def str_code_to_cst(code: str):
+def str_code_to_cst(code: str) -> cst.CSTNode:
     cst_tree = cst.parse_expression(code)
     return cst_tree
 
@@ -45,15 +45,21 @@ class DataFrameNode(IRNode):
 
 
 class SQLNode(DataFrameNode):
-    def __init__(self, sql: str, con, *args, **kwargs):
+    def __init__(self, sql: str, con: cst.CSTNode, *args, **kwargs):
         self.sql = sql
-        self.con = con
+        self._con = con
 
         super().__init__(*args, **kwargs)
 
     @property
     def sql_string(self) -> str:
         return self.sql.replace('"', "")
+
+    @property
+    def con(self) -> cst.CSTNode:
+        if isinstance(self._con, cst.CSTNode):
+            return self._con
+        return str_code_to_cst(self._con)
 
     def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         func = sql_access_method
@@ -117,6 +123,7 @@ class JoinNode(DataFrameNode):
 
         # Build cst.Assign Object
         func = sql_access_method
+        # Assume both left and right have the same con
         args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.left.con)]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))

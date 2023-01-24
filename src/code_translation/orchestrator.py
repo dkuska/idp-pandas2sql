@@ -4,21 +4,13 @@ from .NodeReplacer import NodeReplacer
 from .NodeSelector import NodeSelector
 
 src = """
-import numpy
-import pandas as pd
-from pandas import *
 from pandas import read_sql
-
+import pandas
 con1 = DBConnection()
 
-df1 = read_sql("SELECT * FROM table1", con1)
-df2 = pd.read_sql(sql="SELECT attr1, attr2 FROM table2", con=con1)
+df1 = read_sql("SELECT * FROM table1", "something")
 
-df3 = df1.join(df2, how='inner')
-df4 = df1.set_index('key').join(df2.set_index('key'))
 
-sum = df2.sum()
-max = df1.max()
 
 """
 # code for dask

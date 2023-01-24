@@ -106,7 +106,7 @@ aggregation_pipeline_examples = [
 
         df1 = pd.read_sql("SELECT attribute1 FROM table1", "sqlite:///test.db")
 
-        result = df2.sum()
+        result = df1.sum()
         """,
         """
         import pandas as pd
@@ -121,7 +121,7 @@ aggregation_pipeline_examples = [
 
         df1 = pd.read_sql("SELECT attribute1 FROM table1", "sqlite:///test.db")
 
-        result = df2.mean()
+        result = df1.mean()
         """,
         """
         import pandas as pd
@@ -136,7 +136,7 @@ aggregation_pipeline_examples = [
 
         df1 = pd.read_sql("SELECT attribute1 FROM table1", "sqlite:///test.db")
 
-        result = df2.aggregate("max")
+        result = df1.aggregate("max")
         """,
         """
         import pandas as pd
