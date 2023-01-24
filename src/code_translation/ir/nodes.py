@@ -5,7 +5,6 @@ import libcst as cst
 
 # TODO:
 # when translating forwards the args
-# replace SOME CONN with the actual conn
 
 
 def str_code_to_cst(code: str) -> cst.CSTNode:

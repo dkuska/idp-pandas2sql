@@ -1,16 +1,21 @@
 import libcst as cst
 
+from .formatter import delete_unused_variables
 from .NodeReplacer import NodeReplacer
 from .NodeSelector import NodeSelector
 
 src = """
+import numpy
+import pandas as pd
+from pandas import *
 from pandas import read_sql
-import pandas
+
 con1 = DBConnection()
 
-df1 = read_sql("SELECT * FROM table1", "something")
+df1 = read_sql("SELECT * FROM table1", con1)
+df2 = pd.read_sql(sql="SELECT attr1, attr2 FROM table2", con="sqlite:///test.db")
 
-
+df3 = df2.join(df1, how='inner')
 
 """
 # code for dask
@@ -67,7 +72,10 @@ class Orchestrator:
         # Export new_code
         new_src = new_tree.code
 
-        return new_src
+        # Format new_src
+        formatted_new_src = delete_unused_variables(new_src)
+
+        return formatted_new_src
 
 
 def main():
