@@ -8,7 +8,7 @@ setup: 			## Create environment and install base packages
 	@python3 -m venv $(VENV_NAME)
 
 	@echo "Installing base packages"
-	@$(VENV)pip3 install pre-commit black isort flake8 pyproject-flake8 pytest
+	@$(VENV)pip3 install pre-commit black isort autoflake flake8 pyproject-flake8 pytest
 	@$(VENV)pre-commit install-hooks
 	@code --install-extension rioj7.command-variable
 
@@ -22,6 +22,7 @@ lint:				## Lint code
 	@$(VENV)pre-commit run -a
 	@$(VENV)black .
 	@$(VENV)isort .
+	@$(VENV)autoflake src
 	@$(VENV)pflake8 src test
 
 .PHONY: test
