@@ -29,11 +29,10 @@ class NodeSelector(cst.CSTVisitor):
 
         self.variables: dict[str, Node] = {}
         self.interesting_nodes: dict[cst.Assign, Node] = {}
-
+        # Maps the library names in namespace to the responsible InputModule
         self.libraries: dict[str, InputModule] = {}
-        """Maps the library names in namespace to the responsible InputModule"""
+        # Maps the method names in namespace to the responsible InputModule and the original method name.
         self.library_methods: dict[str, tuple[InputModule, str]] = {}
-        """Maps the method names in namespace to the responsible InputModule and the original method name."""
 
         super().__init__()
 
