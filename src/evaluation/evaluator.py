@@ -38,8 +38,8 @@ lineitem_join_orders_pipeline = PipelineExample(
     import pandas
     from .db import PostgresConnection
     with PostgresConnection(DB_CONFIG) as conn:
-        line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn)  # 13.25s 96MB
-        orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn)  # 3.21 24MB
+        line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn)  # 13.25s 96MB 1.3s on db
+        orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn)  # 3.21 24MB 0.3s on db
         results = pandas.merge(
             line_items, orders, left_on="l_orderkey", right_on="o_orderkey", how="left"
         )  # 1.06s 240MB
@@ -55,7 +55,7 @@ lineitem_join_orders_pipeline = PipelineExample(
             LEFT JOIN (SELECT o_orderkey, o_totalprice FROM orders) AS t2\
             ON t1.l_orderkey = t2.o_orderkey",
             conn,
-        )  # 24.70s 192MB
+        )  # 24.70s 192MB 0.7s on db
     """,
 )
 
