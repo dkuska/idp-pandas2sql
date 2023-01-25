@@ -71,13 +71,22 @@ class SQLNode(DataFrameNode):
 
 
 class JoinNode(DataFrameNode):
-    def __init__(self, left: DataFrameNode, right: DataFrameNode, how="", *args, **kwargs):
+    def __init__(
+        self,
+        left: DataFrameNode,
+        right: DataFrameNode,
+        how: Optional[str] = None,
+        on: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         left.parent = self
         right.parent = self
 
         self.left = left
         self.right = right
-        self.how = how.replace('"', "")
+        self.how = how.replace('"', "") if how else None
+        self.on = on.replace('"', "") if on else None
 
         super().__init__(*args, **kwargs)
 
@@ -115,7 +124,10 @@ class JoinNode(DataFrameNode):
             left_table_alias = "S1"
             right_table_alias = "S2"
             return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
-
+        elif self.on:
+            left_table_alias = "S1"
+            right_table_alias = "S2"
+            return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{self.on} = {right_table_alias}.{self.on}"
         else:
             return f"SELECT * FROM ({left_sql}) {join_operator} ({right_sql})"
 

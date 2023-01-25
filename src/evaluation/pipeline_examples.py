@@ -100,7 +100,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) JOIN (SELECT * FROM table2)" ON table1.key = table2.key, con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key", con)
         result # do something with result
         """,
     ),
@@ -122,7 +122,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) INNER JOIN (SELECT * FROM table2)" ON table1.key = table2.key, con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 INNER JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key", con)
         result # do something with result
         """,
     ),
