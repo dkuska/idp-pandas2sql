@@ -197,10 +197,17 @@ class AggregationNode(DataFrameNode):
                 1,
             )
 
-        code = cst.Call(
-            func=sql_access_method,
-            args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
-        )
+            code = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
+            )
+
+        else:
+            code = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst('"' + sql_query + '"')), cst.Arg(value=self.con)],
+            )
+
         return CSTTranslation(code=code, precode=precode)
 
 
