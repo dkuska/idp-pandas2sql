@@ -5,9 +5,13 @@ from .NodeSelector import input_modules
 src = """
 import pandas
 
-df1 = "something"
-df2 = "something as well"
-print(df2)
+con = "sqlite:///test.db"
+
+df1 = pandas.read_sql("SELECT attribute1 FROM table1", con)
+
+result = pandas.read_sql("SELECT AVG(attribute1) AS avg_attribute1 FROM table1", con)
+return result
+
 """
 
 
@@ -16,7 +20,7 @@ def delete_unused_variables(code: str) -> str:
         return "def some_function():\n" + src.replace("\n", "\n\t")
 
     def post_process(src: str) -> str:
-        return src[1:].replace("\n\t", "\n")
+        return src.replace("def some_function():\n", "").replace("\n\t", "\n")
 
     code = pre_process(code)
     module_names = ",".join([module.module_name for module in input_modules])
