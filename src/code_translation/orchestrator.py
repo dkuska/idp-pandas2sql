@@ -7,15 +7,15 @@ from .NodeSelector import NodeSelector
 src = """
 import numpy
 import pandas as pd
-from pandas import *
-from pandas import read_sql
 
 con1 = DBConnection()
 
-df1 = read_sql("SELECT * FROM table1", con1)
-df2 = pd.read_sql(sql="SELECT attr1, attr2 FROM table2", con="sqlite:///test.db")
+df1 = pd.read_sql("SELECT * FROM table1", con1)
+df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con1)
 
 df3 = df2.join(df1, how='inner')
+
+df3 # do something with df3
 
 """
 # code for dask
