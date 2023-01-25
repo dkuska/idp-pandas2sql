@@ -27,6 +27,14 @@ class PandasInput(InputModule):
     def visit_df_set_index(self, df_node: DataFrameNode, *args, **kwargs):
         return SetKeyNode(df_node, *args, **kwargs)
 
+    def visit_df_aggregate(self, df_node: DataFrameNode, func: str, *args, **kwargs):
+        # func could be '"max"'
+        func = func.replace('"', "")
+        # we need to replace 'mean' with 'avg'
+        if func == "mean":
+            func = "avg"
+        return AggregationNode(df_node, func, *args, **kwargs)
+
     def visit_df_min(self, df_node: DataFrameNode, *args, **kwargs):
         return AggregationNode(df_node, "min", *args, **kwargs)
 
