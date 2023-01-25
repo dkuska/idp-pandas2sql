@@ -71,21 +71,22 @@ class SQLNode(DataFrameNode):
 
 
 class JoinNode(DataFrameNode):
-    def __init__(self, left: DataFrameNode, right: DataFrameNode, *args, **kwargs):
+    def __init__(self, left: DataFrameNode, right: DataFrameNode, how="", *args, **kwargs):
         left.parent = self
         right.parent = self
 
         self.left = left
         self.right = right
+        self.how = how.replace('"', "")
 
         super().__init__(*args, **kwargs)
 
     @property
     def sql_string(self) -> Optional[str]:
-        if self.left.sql_string and self.right.sql_string:  # check if two connections are the same
-            return f"'SELECT * FROM ({self.left.sql_string}) JOIN ({self.right.sql_string})')"
+        join_operator = "JOIN"
+        if self.how:
+            join_operator = f"{self.how.upper()} {join_operator}"
 
-    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
@@ -113,12 +114,13 @@ class JoinNode(DataFrameNode):
             # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
             left_table_alias = "S1"
             right_table_alias = "S2"
-            query_str = f"SELECT * FROM ({left_sql}) AS {left_table_alias} JOIN ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
+            return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
 
         else:
-            query_str = f"SELECT * FROM ({left_sql}) JOIN ({right_sql})"
+            return f"SELECT * FROM ({left_sql}) {join_operator} ({right_sql})"
 
-        query_str = '"' + query_str + '"'
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
+        query_str = '"' + self.sql_string + '"'
 
         # Build cst.Assign Object
         func = sql_access_method

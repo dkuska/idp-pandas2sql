@@ -24,7 +24,7 @@ join_pipeline_examples = [
         con = "sqlite:///test.db"
 
         df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con)
+        df2 = pd.read_sql("SELECT * FROM table2", con)
 
         result = df1.join(df2)
         result # do something with result
@@ -46,7 +46,7 @@ join_pipeline_examples = [
         con = "sqlite:///test.db"
 
         df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con)
+        df2 = pd.read_sql("SELECT * FROM table2", con)
 
         result = df1.join(df2, how="inner")
         result # do something with result
@@ -68,7 +68,7 @@ join_pipeline_examples = [
         con = "sqlite:///test.db"
 
         df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con)
+        df2 = pd.read_sql("SELECT * FROM table2", con)
 
         result = df1.join(df2, how="left")
         result # do something with result
@@ -90,7 +90,7 @@ join_pipeline_examples = [
         con = "sqlite:///test.db"
 
         df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con)
+        df2 = pd.read_sql("SELECT * FROM table2", con)
 
         result = df1.join(df2, on="key")
         result # do something with result
@@ -112,7 +112,7 @@ join_pipeline_examples = [
         con = "sqlite:///test.db"
 
         df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con)
+        df2 = pd.read_sql("SELECT * FROM table2", con)
 
         result = df1.join(df2, on="key", how="inner")
         result # do something with result
