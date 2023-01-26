@@ -32,7 +32,15 @@
 				"module": "${command:extension.commandvariable.file.relativeFileDotsNoExtension}",
 				"console": "integratedTerminal",
 				"justMyCode": true
-			}
+			},
+			{
+				"name": "Debug Orchestrator",
+				"type": "python",
+				"request": "launch",
+				"module": "src.code_translation.orchestrator",
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
 		]
 	},
 }
