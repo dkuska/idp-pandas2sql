@@ -149,7 +149,7 @@ class NodeSelector(cst.CSTVisitor):
             return result
 
     def resolve_Name(self, node: cst.Name) -> Node:
-        if node.value == "True" or node.value == "False":
+        if node.value in ["True", "False"]:
             return node
         if node.value not in self.variables:
             raise UnresolvableCSTNode(f'Name ("{node.value}")')
