@@ -24,10 +24,10 @@
 
 ## CW 4
 
-- IR important Parameters - TODO
-- Linting/Deletion of unused nodes - TODO: Dave
+- IR important Parameters - Done (we have on, how and aggregate now)
+- Linting/Deletion of unused nodes - Done (can be replaced by something smarter)
 - Aggregation Query Generation - Done
-- Creation of Test-Cases for Source Transformation - TODO
+- Creation of Test-Cases for Source Transformation - Done
 - Output Modules - TODO: Tobi
 
 ## CW 5
