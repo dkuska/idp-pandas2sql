@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ...exceptions import LibMethodUnresolved, LibMethodWithoutHandler
 from ..ir.nodes import IRNode
 
@@ -13,19 +15,19 @@ class InputModule:
         return []
 
     @property
-    def sql_access_method(self) -> str:
+    def sql_access_method(self) -> Optional[str]:
         pass
 
-    def resolve_call(self, method_name: str, df: bool, *args, **kwargs) -> IRNode:
-        visitor_method_name = f"visit_{'df_' if df else ''}{method_name}"
+    def resolve_call(self, method_name: str, is_df: bool, *args, **kwargs) -> IRNode:
+        visitor_method_name = f"visit_{'df_' if is_df else ''}{method_name}"
 
         if not hasattr(self, visitor_method_name):
-            raise LibMethodWithoutHandler(self.module_name, df, method_name)
+            raise LibMethodWithoutHandler(self.module_name, is_df, method_name)
 
         visitor_method = getattr(self, visitor_method_name)
         result = visitor_method(*args, **kwargs)
         if not result:
-            raise LibMethodUnresolved(self.module_name, df, method_name)
+            raise LibMethodUnresolved(self.module_name, is_df, method_name)
         if not result.library:
             result.library = self.module_name
         return result

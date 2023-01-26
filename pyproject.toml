@@ -30,3 +30,11 @@ filterwarnings = [
 
 [tool.pycln]
 all = true
+
+[tool.autoflake]
+recursive = true
+in-place = true
+remove-unused-variables = true
+remove-rhs-for-unused-variables = true
+remove-all-unused-imports = true
+ignore-init-module-imports = true

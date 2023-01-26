@@ -5,10 +5,9 @@ import libcst as cst
 
 # TODO:
 # when translating forwards the args
-# replace SOME CONN with the actual conn
 
 
-def str_code_to_cst(code: str):
+def str_code_to_cst(code: str) -> cst.CSTNode:
     cst_tree = cst.parse_expression(code)
     return cst_tree
 
@@ -45,15 +44,21 @@ class DataFrameNode(IRNode):
 
 
 class SQLNode(DataFrameNode):
-    def __init__(self, sql: str, con, *args, **kwargs):
+    def __init__(self, sql: str, con: cst.CSTNode, *args, **kwargs):
         self.sql = sql
-        self.con = con
+        self._con = con
 
         super().__init__(*args, **kwargs)
 
     @property
     def sql_string(self) -> str:
         return self.sql.replace('"', "")
+
+    @property
+    def con(self) -> cst.CSTNode:
+        if isinstance(self._con, cst.CSTNode):
+            return self._con
+        return str_code_to_cst(self._con)
 
     def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         func = sql_access_method
@@ -66,21 +71,31 @@ class SQLNode(DataFrameNode):
 
 
 class JoinNode(DataFrameNode):
-    def __init__(self, left: DataFrameNode, right: DataFrameNode, *args, **kwargs):
+    def __init__(
+        self,
+        left: DataFrameNode,
+        right: DataFrameNode,
+        how: Optional[str] = None,
+        on: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
         left.parent = self
         right.parent = self
 
         self.left = left
         self.right = right
+        self.how = how.replace('"', "") if how else None
+        self.on = on.replace('"', "") if on else None
 
         super().__init__(*args, **kwargs)
 
     @property
     def sql_string(self) -> Optional[str]:
-        if self.left.sql_string and self.right.sql_string:  # check if two connections are the same
-            return f"'SELECT * FROM ({self.left.sql_string}) JOIN ({self.right.sql_string})')"
+        join_operator = "JOIN"
+        if self.how:
+            join_operator = f"{self.how.upper()} {join_operator}"
 
-    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
@@ -104,19 +119,24 @@ class JoinNode(DataFrameNode):
             return None
 
         # Build query string
-        if left_set_key or right_set_key:
+        if left_set_key and right_set_key:
             # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
             left_table_alias = "S1"
             right_table_alias = "S2"
-            query_str = f"SELECT * FROM ({left_sql}) AS {left_table_alias} JOIN ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
-
+            return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
+        elif self.on:
+            left_table_alias = "S1"
+            right_table_alias = "S2"
+            return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{self.on} = {right_table_alias}.{self.on}"
         else:
-            query_str = f"SELECT * FROM ({left_sql}) JOIN ({right_sql})"
+            return f"SELECT * FROM ({left_sql}) {join_operator} ({right_sql})"
 
-        query_str = '"' + query_str + '"'
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
+        query_str = '"' + self.sql_string + '"'
 
         # Build cst.Assign Object
         func = sql_access_method
+        # Assume both left and right have the same con
         args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.left.con)]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))
@@ -191,10 +211,17 @@ class AggregationNode(DataFrameNode):
                 1,
             )
 
-        code = cst.Call(
-            func=sql_access_method,
-            args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
-        )
+            code = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
+            )
+
+        else:
+            code = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst('"' + sql_query + '"')), cst.Arg(value=self.con)],
+            )
+
         return CSTTranslation(code=code, precode=precode)
 
 

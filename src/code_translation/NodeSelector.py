@@ -29,6 +29,7 @@ class NodeSelector(cst.CSTVisitor):
 
         self.variables: dict[str, Node] = {}
         self.interesting_nodes: dict[cst.Assign, Node] = {}
+
         # Maps the library names in namespace to the responsible InputModule
         self.libraries: dict[str, InputModule] = {}
         # Maps the method names in namespace to the responsible InputModule and the original method name.
@@ -148,9 +149,13 @@ class NodeSelector(cst.CSTVisitor):
             return result
 
     def resolve_Name(self, node: cst.Name) -> Node:
+        if node.value in ["True", "False"]:
+            return node
         if node.value not in self.variables:
             raise UnresolvableCSTNode(f'Name ("{node.value}")')
-        return self.variables[node.value]
+        if isinstance(self.variables[node.value], IRNode):
+            return self.variables[node.value]
+        return node
 
     def resolve_Element(self, node: cst.Element) -> Optional[Node]:
         return self.resolve(node.value)

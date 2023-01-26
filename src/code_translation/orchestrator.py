@@ -1,24 +1,21 @@
 import libcst as cst
 
+from .formatter import delete_unused_variables
 from .NodeReplacer import NodeReplacer
 from .NodeSelector import NodeSelector
 
 src = """
 import numpy
 import pandas as pd
-from pandas import *
-from pandas import read_sql
 
 con1 = DBConnection()
 
-df1 = read_sql("SELECT * FROM table1", con1)
-df2 = pd.read_sql(sql="SELECT attr1, attr2 FROM table2", con=con1)
+df1 = pd.read_sql("SELECT * FROM table1", con1)
+df2 = pd.read_sql("SELECT attr1, attr2 FROM table2", con1)
 
-df3 = df1.join(df2, how='inner')
-df4 = df1.set_index('key').join(df2.set_index('key'))
+df3 = df2.join(df1, how='inner')
 
-sum = df2.sum()
-max = df1.max()
+df3 # do something with df3
 
 """
 # code for dask
@@ -75,7 +72,10 @@ class Orchestrator:
         # Export new_code
         new_src = new_tree.code
 
-        return new_src
+        # Format new_src
+        formatted_new_src = delete_unused_variables(new_src)
+
+        return formatted_new_src
 
 
 def main():
