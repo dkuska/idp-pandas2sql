@@ -180,6 +180,27 @@ aggregation_pipeline_examples = [
 
         df1 = pd.read_sql("SELECT attribute1 FROM table1", con)
 
+        result = df1.aggregate(max)
+        result # do something with result
+        """,
+        """
+        import pandas as pd
+
+        con = "sqlite:///test.db"
+
+        result = pd.read_sql("SELECT MAX(attribute1) AS max_attribute1 FROM table1", con)
+        result # do something with result
+        """,
+    ),
+    PipelineExample(
+        'aggregate with "max"',
+        """
+        import pandas as pd
+
+        con = "sqlite:///test.db"
+
+        df1 = pd.read_sql("SELECT attribute1 FROM table1", con)
+
         result = df1.aggregate("max")
         result # do something with result
         """,
@@ -189,6 +210,27 @@ aggregation_pipeline_examples = [
         con = "sqlite:///test.db"
 
         result = pd.read_sql("SELECT MAX(attribute1) AS max_attribute1 FROM table1", con)
+        result # do something with result
+        """,
+    ),
+    PipelineExample(
+        "aggregate with 'min'",
+        """
+        import pandas as pd
+
+        con = "sqlite:///test.db"
+
+        df1 = pd.read_sql("SELECT attribute1 FROM table1", con)
+
+        result = df1.aggregate('min')
+        result # do something with result
+        """,
+        """
+        import pandas as pd
+
+        con = "sqlite:///test.db"
+
+        result = pd.read_sql("SELECT MIN(attribute1) AS min_attribute1 FROM table1", con)
         result # do something with result
         """,
     ),
