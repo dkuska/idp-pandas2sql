@@ -119,7 +119,7 @@ class JoinNode(DataFrameNode):
             return None
 
         # Build query string
-        if left_set_key or right_set_key:
+        if left_set_key and right_set_key:
             # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
             left_table_alias = "S1"
             right_table_alias = "S2"
