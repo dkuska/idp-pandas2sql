@@ -1,3 +1,7 @@
+from typing import Union
+
+import libcst as cst
+
 from ..ir.nodes import AggregationNode, DataFrameNode, JoinNode, SetKeyNode, SQLNode
 from .inputModule import InputModule
 
@@ -27,9 +31,12 @@ class PandasInput(InputModule):
     def visit_df_set_index(self, df_node: DataFrameNode, *args, **kwargs):
         return SetKeyNode(df_node, *args, **kwargs)
 
-    def visit_df_aggregate(self, df_node: DataFrameNode, func: str, *args, **kwargs):
+    def visit_df_aggregate(self, df_node: DataFrameNode, func: Union[str, cst.Name], *args, **kwargs):
         # func could be '"max"'
-        func = func.replace('"', "")
+        if isinstance(func, cst.Name):
+            func = func.value
+        elif isinstance(func, str):
+            func = func.strip('"').strip("'")
         # we need to replace 'mean' with 'avg'
         if func == "mean":
             func = "avg"

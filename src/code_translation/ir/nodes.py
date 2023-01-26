@@ -52,7 +52,7 @@ class SQLNode(DataFrameNode):
 
     @property
     def sql_string(self) -> str:
-        return self.sql.replace('"', "")
+        return self.sql.strip('"').strip("'")
 
     @property
     def con(self) -> cst.CSTNode:
@@ -85,8 +85,8 @@ class JoinNode(DataFrameNode):
 
         self.left = left
         self.right = right
-        self.how = how.replace('"', "") if how else None
-        self.on = on.replace('"', "") if on else None
+        self.how = how.strip('"').strip("'") if how else None
+        self.on = on.strip('"').strip("'") if on else None
 
         super().__init__(*args, **kwargs)
 
@@ -99,22 +99,22 @@ class JoinNode(DataFrameNode):
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
-            left_sql = self.left.sql_string.replace('"', "")
+            left_sql = self.left.sql_string.strip('"').strip("'")
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
-            left_sql = self.left.node.sql_string.replace('"', "")
-            left_key = self.left.key.replace('"', "").replace("'", "")
+            left_sql = self.left.node.sql_string.strip('"').strip("'")
+            left_key = self.left.key.strip('"').strip("'").replace("'", "")
         else:
             return None
 
         # Extract query and additional information from right node
         right_set_key = False
         if isinstance(self.right, SQLNode):
-            right_sql = self.right.sql_string.replace('"', "")
+            right_sql = self.right.sql_string.strip('"').strip("'")
         elif isinstance(self.right, SetKeyNode):
             right_set_key = True
-            right_sql = self.right.node.sql_string.replace('"', "")
-            right_key = self.right.key.replace('"', "").replace("'", "")  # TODO: Implement for more complex types
+            right_sql = self.right.node.sql_string.strip('"').strip("'")
+            right_key = self.right.key.strip('"').strip("'").replace("'", "")  # TODO: Implement for more complex types
         else:
             return None
 
