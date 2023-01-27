@@ -12,11 +12,11 @@ class PostgresConfig(NamedTuple):
 
 
 POSTGRES_TPC_H_1GB_CONFIG = PostgresConfig(
-    host="172.20.18.12", port="5777", database="tpc_h_1gb", user="admin", password="idp22-hisssql"
+    host="172.31.0.10", port="5432", database="tpc_h_1gb", user="admin", password="idp22-hisssql"
 )
 
 POSTGRES_TPC_H_10GB_CONFIG = PostgresConfig(
-    host="172.20.18.12", port="5777", database="tpc_h_10gb", user="admin", password="idp22-hisssql"
+    host="172.31.0.10", port="5432", database="tpc_h_10gb", user="admin", password="idp22-hisssql"
 )
 
 LOCAL_CONFIG_01GB = PostgresConfig(
