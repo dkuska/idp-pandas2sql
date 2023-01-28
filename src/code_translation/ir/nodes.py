@@ -60,13 +60,11 @@ class SQLNode(DataFrameNode):
 
     @property
     def sql_string(self) -> str:
-        return self.sql.strip('"').strip("'")
+        return self.sql
 
     @property
     def con(self) -> cst.CSTNode:
-        if isinstance(self._con, cst.CSTNode):
-            return self._con
-        return str_code_to_cst(self._con)
+        return self._con
 
     def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         func = sql_access_method
@@ -93,8 +91,6 @@ class SortNode(DataFrameNode):
             by = evaluate_cst(by)
         if isinstance(by, str):
             by = [by]
-        if isinstance(by, list):
-            by = [b.strip('"').strip("'") for b in by]
         self.by = by
         if isinstance(ascending, cst.CSTNode):
             ascending = evaluate_cst(ascending)
@@ -155,8 +151,8 @@ class JoinNode(DataFrameNode):
 
         self.left = left
         self.right = right
-        self.how = how.strip('"').strip("'") if how else None
-        self.on = on.strip('"').strip("'") if on else None
+        self.how = how
+        self.on = on
 
         super().__init__(*args, **kwargs)
 
@@ -173,22 +169,22 @@ class JoinNode(DataFrameNode):
         # Extract query and additional information from left node
         left_set_key = False
         if isinstance(self.left, SQLNode):
-            left_sql = self.left.sql_string.strip('"').strip("'")
+            left_sql = self.left.sql_string
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
-            left_sql = self.left.node.sql_string.strip('"').strip("'")
-            left_key = self.left.key.strip('"').strip("'").replace("'", "")
+            left_sql = self.left.node.sql_string
+            left_key = self.left.key
         else:
             return None
 
         # Extract query and additional information from right node
         right_set_key = False
         if isinstance(self.right, SQLNode):
-            right_sql = self.right.sql_string.strip('"').strip("'")
+            right_sql = self.right.sql_string
         elif isinstance(self.right, SetKeyNode):
             right_set_key = True
-            right_sql = self.right.node.sql_string.strip('"').strip("'")
-            right_key = self.right.key.strip('"').strip("'").replace("'", "")  # TODO: Implement for more complex types
+            right_sql = self.right.node.sql_string
+            right_key = self.right.key  # TODO: Implement for more complex types
         else:
             return None
 
@@ -242,7 +238,7 @@ class AggregationNode(DataFrameNode):
 
         self.node = node
         if aggregation not in self.supported_aggregations():
-            raise Exception("unsupported aggregation function was given")
+            raise Exception(f"unsupported aggregation function was given: {aggregation}")
         self.aggregation = aggregation
 
         super().__init__(*args, **kwargs)

@@ -167,7 +167,7 @@ class NodeSelector(cst.CSTVisitor):
         return tuple(ret_values)
 
     def resolve_SimpleString(self, node: cst.SimpleString) -> str:
-        return node.value
+        return node.evaluated_value
 
     def parse_NonKwArg(self, node: cst.Arg) -> Node:
         arg_value = self.resolve(node.value)
