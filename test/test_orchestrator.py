@@ -1,5 +1,5 @@
 from src.code_translation.orchestrator import Orchestrator
-from src.evaluation.pipeline_examples import PipelineExample
+from src.evaluation.examples import PipelineExample
 
 from .conftest import assert_equal_code, given
 
