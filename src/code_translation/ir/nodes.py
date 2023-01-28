@@ -46,6 +46,10 @@ class DataFrameNode(IRNode):
     def to_cst_translation(self, sql_access_method) -> CSTTranslation:
         pass
 
+    @property
+    def con(self):
+        return self.node.con
+
 
 class SQLNode(DataFrameNode):
     def __init__(self, sql: str, con: cst.CSTNode, *args, **kwargs):
@@ -97,10 +101,6 @@ class SortNode(DataFrameNode):
         self.ascending = ascending
 
         super().__init__(*args, **kwargs)
-
-    @property
-    def con(self):
-        return self.node.con
 
     @property
     def sql_string(self) -> Optional[str]:
@@ -161,9 +161,8 @@ class JoinNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def con(self):
-        # Assume that both left and right have the same connection
-        return self.left.con
+    def node(self):
+        return self.left
 
     @property
     def sql_string(self) -> Optional[str]:
@@ -212,7 +211,7 @@ class JoinNode(DataFrameNode):
         # Build cst.Assign Object
         func = sql_access_method
         # Assume both left and right have the same con
-        args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.left.con)]
+        args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.con)]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))
 
@@ -225,10 +224,6 @@ class SetKeyNode(DataFrameNode):
         self.key = key
 
         super().__init__(*args, **kwargs)
-
-    @property
-    def con(self):
-        return self.node.con
 
     def to_cst_translation(self) -> CSTTranslation:
         func = cst.Attribute(value=self.node.to_cst_statement(), attr="join")
@@ -251,10 +246,6 @@ class AggregationNode(DataFrameNode):
         self.aggregation = aggregation
 
         super().__init__(*args, **kwargs)
-
-    @property
-    def con(self):
-        return self.node.con
 
     @property
     def sql_string(self) -> Optional[str]:
