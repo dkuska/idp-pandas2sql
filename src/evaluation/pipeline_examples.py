@@ -253,8 +253,8 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        temp = pd.read_sql("SELECT * FROM table1 LIMIT 0", con).columns
-        result = pd.read_sql(f"SELECT {', '.join(['MAX(' + c + ') AS max_' + c for c in temp])} FROM table1", con)
+        temp = pd.read_sql("SELECT * FROM (SELECT * FROM table1) JOIN (SELECT * FROM table2) LIMIT 0", con).columns
+        result = pd.read_sql(f"SELECT * FROM (SELECT * FROM table1) JOIN (SELECT * FROM table2) ORDER BY {', '.join(temp)} ASC", con)
         result # do something with result
         """,
     ),

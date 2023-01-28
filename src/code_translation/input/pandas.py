@@ -33,9 +33,14 @@ class PandasInput(InputModule):
         return SortNode(df_node, *args, **kwargs)
 
     def visit_df_join(self, df_node: DataFrameNode, *args, **kwargs):
+        # TODO This is only if sort is kwargs. Handle if sort is in *args
+        if kwargs.get("sort", False):
+            return SortNode(JoinNode(df_node, *args, **kwargs))
         return JoinNode(df_node, *args, **kwargs)
 
     def visit_df_merge(self, df_node: DataFrameNode, *args, **kwargs):
+        if kwargs.get("sort", False):
+            return SortNode(JoinNode(df_node, *args, **kwargs))
         return JoinNode(df_node, *args, **kwargs)
 
     def visit_df_set_index(self, df_node: DataFrameNode, *args, **kwargs):

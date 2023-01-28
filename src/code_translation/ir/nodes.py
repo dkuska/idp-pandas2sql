@@ -161,6 +161,11 @@ class JoinNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
+    def con(self):
+        # Assume that both left and right have the same connection
+        return self.left.con
+
+    @property
     def sql_string(self) -> Optional[str]:
         join_operator = "JOIN"
         if self.how:
