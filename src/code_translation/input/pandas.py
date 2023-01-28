@@ -2,7 +2,14 @@ from typing import Union
 
 import libcst as cst
 
-from ..ir.nodes import AggregationNode, DataFrameNode, JoinNode, SetKeyNode, SQLNode
+from ..ir.nodes import (
+    AggregationNode,
+    DataFrameNode,
+    JoinNode,
+    SetKeyNode,
+    SortNode,
+    SQLNode,
+)
 from .inputModule import InputModule
 
 
@@ -21,6 +28,9 @@ class PandasInput(InputModule):
         return SQLNode(*args, **kwargs)
 
     # df methods
+
+    def visit_df_sort_values(self, df_node: DataFrameNode, *args, **kwargs):
+        return SortNode(df_node, *args, **kwargs)
 
     def visit_df_join(self, df_node: DataFrameNode, *args, **kwargs):
         return JoinNode(df_node, *args, **kwargs)

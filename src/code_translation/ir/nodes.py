@@ -1,3 +1,4 @@
+import ast
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional
 
@@ -8,8 +9,11 @@ import libcst as cst
 
 
 def str_code_to_cst(code: str) -> cst.CSTNode:
-    cst_tree = cst.parse_expression(code)
-    return cst_tree
+    return cst.parse_expression(code)
+
+
+def evaluate_cst(node: cst.CSTNode) -> any:
+    return ast.literal_eval(cst.Module(body=[node]).code)
 
 
 class CSTTranslation(NamedTuple):
@@ -68,6 +72,72 @@ class SQLNode(DataFrameNode):
         ]
 
         return CSTTranslation(code=cst.Call(func=func, args=args))
+
+
+class SortNode(DataFrameNode):
+    def __init__(
+        self,
+        node: DataFrameNode,
+        by: Optional[str] = None,
+        ascending: bool = True,
+        *args,
+        **kwargs,
+    ):
+        node.parent = self
+        self.node = node
+        if isinstance(by, cst.CSTNode):
+            by = evaluate_cst(by)
+        if isinstance(by, str):
+            by = [by]
+        if isinstance(by, list):
+            by = [b.strip('"').strip("'") for b in by]
+        self.by = by
+        if isinstance(ascending, cst.CSTNode):
+            ascending = evaluate_cst(ascending)
+        self.ascending = ascending
+
+        super().__init__(*args, **kwargs)
+
+    @property
+    def con(self):
+        return self.node.con
+
+    @property
+    def sql_string(self) -> Optional[str]:
+        if self.node.sql_string:
+            if self.by:
+                return f"{self.node.sql_string} ORDER BY {', '.join(self.by)} {'ASC' if self.ascending else 'DESC'}"
+
+            selected_columns = selected_columns_in_query(self.node.sql_string)
+            if selected_columns != ["*"]:
+                return f"{self.node.sql_string} ORDER BY {', '.join(selected_columns)} {'ASC' if self.ascending else 'DESC'}"
+
+    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
+        selected_columns = selected_columns_in_query(self.node.sql_string)
+        if not self.sql_string and selected_columns == ["*"]:
+            variable_name = "temp"
+            assign_target = cst.AssignTarget(target=cst.Name(value=variable_name))
+            attribute = cst.Name(value="columns")
+            call = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst(f'"{self.node.sql_string} LIMIT 0"')), cst.Arg(value=self.con)],
+            )
+            precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
+            sql_query = self.node.sql_string + f" ORDER BY {{', '.join({variable_name})}} "
+            sql_query += "ASC" if self.ascending else "DESC"
+
+            code = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
+            )
+        else:
+            precode = []
+            code = cst.Call(
+                func=sql_access_method,
+                args=[cst.Arg(value=str_code_to_cst('"' + self.sql_string + '"')), cst.Arg(value=self.con)],
+            )
+
+        return CSTTranslation(code=code, precode=precode)
 
 
 class JoinNode(DataFrameNode):
