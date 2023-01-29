@@ -113,6 +113,8 @@ class JoinNode(DataFrameNode):
         left_set_key = False
         if isinstance(self.left, SQLNode):
             left_sql = self.left.sql_string.strip('"').strip("'")
+        elif isinstance(self.left, JoinNode):
+            left_sql = self.left.sql_string.strip('"').strip("'")
         elif isinstance(self.left, AggregationNode):
             # This is where the dependency injection starts to suck...
             # We just want to find out if there is a precode condition for the CSTTranslation
@@ -130,6 +132,8 @@ class JoinNode(DataFrameNode):
         # Extract query and additional information from right node
         right_set_key = False
         if isinstance(self.right, SQLNode):
+            right_sql = self.right.sql_string.strip('"').strip("'")
+        elif isinstance(self.right, JoinNode):
             right_sql = self.right.sql_string.strip('"').strip("'")
         elif isinstance(self.right, AggregationNode):
             # Same as above with the left-hand side...
