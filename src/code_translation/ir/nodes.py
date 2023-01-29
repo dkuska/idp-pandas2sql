@@ -35,6 +35,10 @@ class IRNode(ABC):
 
 class DataFrameNode(IRNode):
     @property
+    def con(self):
+        pass
+
+    @property
     def sql_string(self):
         pass
 
@@ -89,6 +93,15 @@ class JoinNode(DataFrameNode):
         self.on = on.strip('"').strip("'") if on else None
 
         super().__init__(*args, **kwargs)
+
+    @property
+    def con(self) -> cst.CSTNode:
+        left_con = self.left._con
+        right_con = self.right._con
+        if left_con.value != right_con.value:
+            raise Exception("Join partners from different sources")
+        else:
+            return left_con
 
     @property
     def sql_string(self) -> Optional[str]:
