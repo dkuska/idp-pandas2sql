@@ -96,8 +96,8 @@ class JoinNode(DataFrameNode):
 
     @property
     def con(self) -> cst.CSTNode:
-        left_con = self.left._con
-        right_con = self.right._con
+        left_con = self.left.con
+        right_con = self.right.con
         if left_con.value != right_con.value:
             raise Exception("Join partners from different sources")
         else:
