@@ -1,12 +1,12 @@
 import time
 import warnings
 
-from .db import LOCAL_CONFIG_1GB
+from .db import POSTGRES_TPC_H_10GB_CONFIG
 from .examples import PipelineCode, PipelineExample
 
 warnings.filterwarnings("ignore")
 
-DB_CONFIG = LOCAL_CONFIG_1GB
+DB_CONFIG = POSTGRES_TPC_H_10GB_CONFIG
 
 
 class Evaluator:
@@ -131,3 +131,51 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+s = 1
+Evaluating LINEITEMS JOIN ORDERS:
+Unoptimized code execution time: 10.17s
+optimized code execution time: 14.85s
+----------------
+Evaluating PARTSUPP JOIN PARTS:
+Unoptimized code execution time: 2.27s
+optimized code execution time: 3.95s
+----------------
+Evaluating MAX DISCOUNT OF LINEITEMS:
+Unoptimized code execution time: 5.25s
+optimized code execution time: 0.36s
+----------------
+Evaluating SUM TOTALPRICE OF ORDERS:
+Unoptimized code execution time: 1.42s
+optimized code execution time: 0.09s
+----------------
+
+s = 10
+Evaluating LINEITEMS JOIN ORDERS:
+Unoptimized code execution time: 99.69s
+{
+    lineitem: 959.8 MB in 67.6s (13.1s on the db),
+    orders: 24.0 MB in 17.8s (3.8s on the db),
+    result: 2399.4 MB in 10.5s,
+}
+optimized code execution time: 145.54s
+{
+    result: 1919.6 MB in 145.4s (38.8s on the db),
+}
+----------------
+Evaluating PARTSUPP JOIN PARTS:
+Unoptimized code execution time: 22.60s
+optimized code execution time: 37.68s
+----------------
+Evaluating MAX DISCOUNT OF LINEITEMS:
+Unoptimized code execution time: 49.11s
+optimized code execution time: 2.26s
+----------------
+Evaluating SUM TOTALPRICE OF ORDERS:
+Unoptimized code execution time: 13.87s
+optimized code execution time: 0.72s
+----------------
+
+transofrmation time: 0.01s for all pipelines
+"""
