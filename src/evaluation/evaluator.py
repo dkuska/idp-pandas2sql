@@ -2,7 +2,7 @@ import time
 import warnings
 
 from .db import POSTGRES_TPC_H_10GB_CONFIG
-from .pipeline_examples import PipelineCode, PipelineExample
+from .examples import PipelineCode, PipelineExample
 
 warnings.filterwarnings("ignore")
 

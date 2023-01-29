@@ -1,33 +1,28 @@
 from src.code_translation.orchestrator import Orchestrator
-from src.evaluation.examples import (
-    PipelineExample,
-    aggregation_pipeline_examples,
-    join_pipeline_examples,
-    sort_pipeline_examples,
-)
+from src.evaluation.examples import PipelineExample
 
 from .conftest import assert_equal_code, given
 
 
 @given(
     "pipeline",
-    sort_pipeline_examples,
+    [],
 )
-def test_sort_pipeline(pipeline: PipelineExample):
+def test_keep_non_interested_code(pipeline: PipelineExample):
     assert_equal_code(Orchestrator().transform(pipeline.code), pipeline.optimized_code)
 
 
 @given(
     "pipeline",
-    join_pipeline_examples,
+    [],
 )
-def test_join_pipeline(pipeline: PipelineExample):
+def test_with_unknown_modules(pipeline: PipelineExample):
     assert_equal_code(Orchestrator().transform(pipeline.code), pipeline.optimized_code)
 
 
 @given(
     "pipeline",
-    aggregation_pipeline_examples,
+    [],
 )
-def test_aggregation_pipeline(pipeline: PipelineExample):
+def test_used_intermediate_results(pipeline: PipelineExample):
     assert_equal_code(Orchestrator().transform(pipeline.code), pipeline.optimized_code)
