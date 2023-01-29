@@ -2,7 +2,7 @@ import time
 import warnings
 
 from .db import LOCAL_CONFIG_1GB
-from .pipeline_examples import PipelineCode, PipelineExample
+from .examples import PipelineCode, PipelineExample
 
 warnings.filterwarnings("ignore")
 
