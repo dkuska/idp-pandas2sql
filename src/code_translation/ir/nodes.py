@@ -39,10 +39,6 @@ class IRNode(ABC):
 
 class DataFrameNode(IRNode):
     @property
-    def con(self):
-        pass
-
-    @property
     def sql_string(self):
         pass
 
@@ -168,7 +164,7 @@ class JoinNode(DataFrameNode):
             raise Exception("Join partners from different sources")
         else:
             return left_con
-        
+
     @property
     def node(self):
         return self.left
