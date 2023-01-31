@@ -11,6 +11,10 @@
     - Data Scientists/Engineers might connect to DBMS for initial data loading but do processing on the client, which could be done inside the DBMS
     - Especially Data Scientists with a non-CS background might not be familiar with all the capabilities of DBMS
     - Idea: Ship parts of the computations to the DBMS and show developers which parts of their ETL pipeline may be realized with relational algebra
+    - However DataFrame libraries and DBMS have different notions of the 'same' operations
+      - why is df.max() not the same as SELECT MAX(...)?!
+      - Why does Pandas join on the index column by default (corresponding to row-index when no explicit index column is set)
+      - Take this burden off of the developers
     - Possible Advantages:
       - Lower Memory Footprint
       - Lower computational load on client system
@@ -26,36 +30,61 @@
     - CST-Parsing
       - Static Code Analysis
       - CST > AST, since this preserves comments/whitespaces -> Optimized code should look as similar to the original code as possible
+      - Visitor Pattern
+        - Override functions to enter certain Types of Nodes and their Children if required
     - IR
       - SQL-based DataFrames and operations on them create graphs in which optimization takes place
-      - All necessary information to create optimized code is contained inside IR-Nodes
+      - All necessary information to create optimized queries is contained inside IR-Nodes
+      - Specific CST Nodes are created with information of input module and IR-Nodes (in the future with OutputModules)
     - General Architecture - (Might be too many details?)
       - Orchestrator - *Main class*
       - NodeSelector
         - Responsible for traversing CST
         - Gathers information on imports, variable assignments
         - If code is detected, that fits into a interface of InputModules, delegates creation of IR-Nodes to it
+        - Apart from Visitor-Pattern, define our own resolve pattern to break out of restrictive Visitor pattern
       - InputModules
         - Responsible for creating IR-Nodes and mapping arguments from different semantics
+        - Get called if specific functions of that module or objects created by their module are called
+        - Define which function calls are handled by which IR-Node and arguments 
+        - Allow for extensibility to new DataFrame libraries
       - NodeReplacer
         - Responsible for replacing old code with new code create inside IR-Nodes
+        - Single pandas call might require multiple SQL Queries (Prequeries, Postqueries) (e.g. Aggregation on all columns, which might not be explicitely known beforehand)
       - OutputModules
-        - TODO
+        - Just as DFs originate from different libraries, they may be translated to different DF library semantics
+        - Left for future work or in-scope?
   - Differences to current state of the art
     - 2 Types of SotA Solutions:
       1. Drop-in Replacements for Pandas
            - Modin, Dask DF
-           - These offer no clarity to developers what is happening in the background
+           - These offer no clarity to developers what is happening in the background and how their code is being run
       2. DataFrame-Systems not entirely compatible with pandas with their own reimplementations  
-           - Grizzly, Ibis
+           - Grizzly, Ibis, AIDA
            - Requires developers to get used to the quirks of these APIs
+           - Don't offer full range of functionality, mostly limited to relational algebra and simple linear algebra
     - Instead we allow users to stay inside their accustomed environment -> No need to keep relearning new frameworks
+  - Limitations
+    - AST/CST are kind of a bitch to deal with...
+    - Pipeline breakers: Unsupported functions
+    - Object Oriented Code, complex functions
+    - F-Strings
+    - Complex control structures
+    - Complex operator chaining
   - Evaluations
+    - Performance at client mostly limited by network, not computations (for most workloads)
+    - Carefully evaluate, whether Join-Results are larger than sum of original tablesa
 
 - Conclusion
   - Summary
   - Take-home message
+    - DBMS have been optimized for relational algebra for multiple decades --> Use the tools for what they were designed for
+    - Pandas is the swiss army knife of a data engineers toolkit, however would you fell a tree with one?
+    - Carefully examine what parts of your ETL chains might be expressed with linear algebra
+    - Automatic translation is very much possible
   - Possible follow-up/ Future Extensions
     - Analysis of whole projects consisting of multiple files
-    - Extension to include more operations based on relational algebra
+    - Analysis of complex functions/ object oriented code instead of imperative code
+    - Extension to include more operations based on relational algebra (filter, groupby, )
     - More freely translate between frameworks/DataFrame semantics
+    - Support for full pandas API instead of only most common arguments
