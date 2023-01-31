@@ -121,12 +121,41 @@ sum_orders_totalprice_pipeline = PipelineExample(
     """,
 )
 
+orders_join_one_customer_pipeline = PipelineExample(
+    "Orders of Customer with name Customer#000000002",
+    """
+    import pandas
+    from .db import PostgresConnection
+    with PostgresConnection(DB_CONFIG) as conn:
+        customer = pandas.read_sql("SELECT * FROM customer WHERE c_name = 'Customer#000000002'", conn)
+        orders = pandas.read_sql("SELECT * FROM orders", conn)
+        results = pandas.merge(customer, orders, left_on="c_custkey", right_on="o_custkey", how="inner")
+        print(customer.memory_usage())
+        print(orders.memory_usage())
+        print(results.memory_usage())
+    """,
+    """
+    import pandas
+    from .db import PostgresConnection
+    with PostgresConnection(DB_CONFIG) as conn:
+        results = pandas.read_sql(
+        "SELECT * FROM \
+            (SELECT * FROM customer WHERE c_name = 'Customer#000000002') AS t1\
+            INNER JOIN (SELECT * FROM orders) AS t2\
+            ON t1.c_custkey = t2.o_custkey",
+        conn,
+    )
+    print(results.memory_usage())
+    """,
+)
+
 
 def main():
     Evaluator(lineitem_join_orders_pipeline).evaluate()
     Evaluator(partsupp_join_parts_pipeline).evaluate()
     Evaluator(max_lineitem_discount_pipeline).evaluate()
     Evaluator(sum_orders_totalprice_pipeline).evaluate()
+    Evaluator(orders_join_one_customer_pipeline).evaluate()
 
 
 if __name__ == "__main__":
@@ -157,11 +186,11 @@ Unoptimized code execution time: 99.69s
 {
     lineitem: 959.8 MB in 67.6s (13.1s on the db),
     orders: 24.0 MB in 17.8s (3.8s on the db),
-    result: 2399.4 MB in 10.5s,
+    results: 2399.4 MB in 10.5s,
 }
 optimized code execution time: 145.54s
 {
-    result: 1919.6 MB in 145.4s (38.8s on the db),
+    results: 1919.6 MB in 145.4s (38.8s on the db),
 }
 ----------------
 Evaluating PARTSUPP JOIN PARTS:
@@ -176,6 +205,17 @@ Evaluating SUM TOTALPRICE OF ORDERS:
 Unoptimized code execution time: 13.87s
 optimized code execution time: 0.72s
 ----------------
+Evaluating ORDERS OF CUSTOMER WITH NAME CUSTOMER#000000002:
+Unoptimized code execution time: 43.18s
+{
+    lineitem: 192 B,
+    orders: 1 GB,
+    results: 432 B,
+}
+optimized code execution time: 0.72s
+{
+    results: 536 B,
+}
 
 transofrmation time: 0.01s for all pipelines
 """
