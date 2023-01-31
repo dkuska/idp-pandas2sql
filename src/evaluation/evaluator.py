@@ -1,12 +1,24 @@
 import time
 import warnings
 
+from ..code_translation.orchestrator import Orchestrator
 from .db import POSTGRES_TPC_H_10GB_CONFIG
 from .examples import PipelineCode, PipelineExample
 
 warnings.filterwarnings("ignore")
 
 DB_CONFIG = POSTGRES_TPC_H_10GB_CONFIG
+
+
+def evaluate_connectoin():
+    start = time.time()
+
+    from .db import PostgresConnection
+
+    with PostgresConnection(DB_CONFIG):
+        pass
+    end = time.time()
+    print(f"Connection time: {end - start:.2f}s")
 
 
 class Evaluator:
@@ -30,6 +42,12 @@ class Evaluator:
         print(f"Unoptimized code execution time: {unoptimized_execution_time:.2f}s")
         print(f"optimized code execution time: {optimized_execution_time:.2f}s")
         print("----------------")
+
+    def evaluate_transofmation(self):
+        start = time.time()
+        Orchestrator().transform(self.pipeline.code)
+        end = time.time()
+        print(f"Transformation time: {end - start:.2f}s")
 
 
 lineitem_join_orders_pipeline = PipelineExample(
@@ -218,4 +236,5 @@ optimized code execution time: 0.72s
 }
 
 transofrmation time: 0.01s for all pipelines
+connection time: 0.43s for all pipelines
 """
