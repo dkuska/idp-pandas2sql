@@ -2,12 +2,12 @@ import time
 import warnings
 
 from ..code_translation.orchestrator import Orchestrator
-from .db import POSTGRES_TPC_H_10GB_CONFIG
+from .db import POSTGRES_TPC_H_1GB_CONFIG
 from .examples import PipelineCode, PipelineExample
 
 warnings.filterwarnings("ignore")
 
-DB_CONFIG = POSTGRES_TPC_H_10GB_CONFIG
+DB_CONFIG = POSTGRES_TPC_H_1GB_CONFIG
 
 
 def evaluate_connectoin():
@@ -139,6 +139,23 @@ sum_orders_totalprice_pipeline = PipelineExample(
     """,
 )
 
+sorted_orders_by_total_price = PipelineExample(
+    "Sort of Orders by Totalprice",
+    """
+    import pandas
+    from .db import PostgresConnection
+    with PostgresConnection(DB_CONFIG) as conn:
+        orders = pandas.read_sql("SELECT * FROM orders", conn)
+        results = orders.sort_values(by="o_totalprice")
+    """,
+    """
+    import pandas
+    from .db import PostgresConnection
+    with PostgresConnection(DB_CONFIG) as conn:
+        results = pandas.read_sql("SELECT * FROM orders ORDER BY o_totalprice", conn)
+    """,
+)
+
 orders_join_one_customer_pipeline = PipelineExample(
     "Orders of Customer with name Customer#000000002",
     """
@@ -174,6 +191,7 @@ def main():
     Evaluator(max_lineitem_discount_pipeline).evaluate()
     Evaluator(sum_orders_totalprice_pipeline).evaluate()
     Evaluator(orders_join_one_customer_pipeline).evaluate()
+    Evaluator(sorted_orders_by_total_price).evaluate()
 
 
 if __name__ == "__main__":
@@ -234,6 +252,10 @@ optimized code execution time: 0.72s
 {
     results: 536 B,
 }
+----------------
+Evaluating SORT OF ORDERS BY TOTALPRICE:
+Unoptimized code execution time: 52.34s
+optimized code execution time: 47.28s
 
 transofrmation time: 0.01s for all pipelines
 connection time: 0.43s for all pipelines
