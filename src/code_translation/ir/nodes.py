@@ -157,6 +157,15 @@ class JoinNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
+    def con(self) -> cst.CSTNode:
+        left_con = self.left.con
+        right_con = self.right.con
+        if left_con.value != right_con.value:
+            raise Exception("Join partners from different sources")
+        else:
+            return left_con
+
+    @property
     def node(self):
         return self.left
 
@@ -170,6 +179,15 @@ class JoinNode(DataFrameNode):
         left_set_key = False
         if isinstance(self.left, SQLNode):
             left_sql = self.left.sql_string
+        elif isinstance(self.left, JoinNode):
+            left_sql = self.left.sql_string
+        elif isinstance(self.left, AggregationNode):
+            # This is where the dependency injection starts to get complicated
+            # TODO: find out if there is a precode condition for the CSTTranslation
+            left_cst_translation = self.left.to_cst_translation(sql_access_method="")  #
+            if left_cst_translation.precode != []:
+                raise Exception("No support for prequeries in JoinNodes yet")  # TODO: Investigate this further...
+            left_sql = self.left.sql_string
         elif isinstance(self.left, SetKeyNode):
             left_set_key = True
             left_sql = self.left.node.sql_string
@@ -180,6 +198,14 @@ class JoinNode(DataFrameNode):
         # Extract query and additional information from right node
         right_set_key = False
         if isinstance(self.right, SQLNode):
+            right_sql = self.right.sql_string
+        elif isinstance(self.right, JoinNode):
+            right_sql = self.right.sql_string
+        elif isinstance(self.right, AggregationNode):
+            # Same as above with the left-hand side...
+            right_cst_translation = self.right.to_cst_translation(sql_access_method="")
+            if right_cst_translation.precode != []:
+                raise Exception("No support for prequeries in JoinNodes yet")
             right_sql = self.right.sql_string
         elif isinstance(self.right, SetKeyNode):
             right_set_key = True
