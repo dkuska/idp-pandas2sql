@@ -1,4 +1,3 @@
-import ast
 from typing import Literal, Optional, Union
 
 import libcst as cst
@@ -12,10 +11,6 @@ from ..ir.nodes import (
     SQLNode,
 )
 from .inputModule import InputModule
-
-
-def evaluate_cst(node: cst.CSTNode) -> any:
-    return ast.literal_eval(cst.Module(body=[node]).code)
 
 
 def make_list(value: str | list[str]) -> list[str]:
