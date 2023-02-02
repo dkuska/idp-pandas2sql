@@ -2,7 +2,6 @@ import ast
 from typing import Literal, Optional, Union
 
 import libcst as cst
-from numpy import isin
 
 from ..ir.nodes import (
     AggregationNode,

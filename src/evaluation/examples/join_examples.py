@@ -24,7 +24,7 @@ join_pipeline_examples = [
         """,
     ),
     PipelineExample(
-        "inneer join on indices",
+        "inner join on indices",
         """
         import pandas as pd
 
