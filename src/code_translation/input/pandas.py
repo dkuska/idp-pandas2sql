@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import libcst as cst
 
@@ -42,12 +42,12 @@ class PandasInput(InputModule):
         self,
         df_node: DataFrameNode,
         other: DataFrameNode,
-        on: Optional[str | list[str]] = None,
-        how: Optional[str] = None,
+        on: str | list[str] | None = None,
+        how: str | None = None,
         lsuffix="",
         rsuffix="",
         sort=False,
-        validate: Optional[bool] = None,
+        validate: bool | None = None,
     ):
         _on: list[str] | Literal["key"]
         if on is None:
@@ -68,16 +68,16 @@ class PandasInput(InputModule):
         df_node: DataFrameNode,
         right: DataFrameNode,
         how: str = "inner",
-        on: Optional[list[str] | str] = None,
-        left_on: Optional[list[str] | str] = None,
-        right_on: Optional[list[str] | str] = None,
+        on: list[str] | str | None = None,
+        left_on: list[str] | str | None = None,
+        right_on: list[str] | str | None = None,
         left_index=False,
         right_index=False,
         sort=False,
         suffixes=("_x", "_y"),
         copy=True,
         indicator=False,
-        validate: Optional[bool] = None,
+        validate: bool | None = None,
     ):
         _left_on: list[str] | Literal["key", "natural"] = "natural"
         _right_on: list[str] | Literal["key", "natural"] = "natural"
@@ -114,7 +114,7 @@ class PandasInput(InputModule):
     def visit_df_set_index(self, df_node: DataFrameNode, keys: str | list[str], *args, **kwargs):
         return SetKeyNode(df_node, make_list(keys), *args, **kwargs)
 
-    def visit_df_aggregate(self, df_node: DataFrameNode, func: Union[str, cst.CSTNode], *args, **kwargs):
+    def visit_df_aggregate(self, df_node: DataFrameNode, func: str | cst.CSTNode, *args, **kwargs):
         if isinstance(func, cst.Name):
             func = func.value
         # we need to replace 'mean' with 'avg'

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Union
 
 import libcst as cst
 
@@ -26,7 +26,6 @@ class NodeSelector(cst.CSTVisitor):
     """
 
     def __init__(self) -> None:
-
         self.variables: dict[str, Node] = {}
         self.interesting_nodes: dict[cst.Assign, Node] = {}
 
@@ -64,7 +63,6 @@ class NodeSelector(cst.CSTVisitor):
 
         # If this method is directly imported without alias, use that one
         for library_method, (input_module, _) in self.library_methods.items():
-
             if input_module.module_name in access_methods and library_method == input_module.sql_access_method:
                 access_methods[input_module.module_name] = cst.Name(value=library_method)
 
@@ -115,7 +113,7 @@ class NodeSelector(cst.CSTVisitor):
 
         return False
 
-    def resolve_Call(self, node: cst.Call) -> Optional[Node]:
+    def resolve_Call(self, node: cst.Call) -> Node | None:
         args = list(self.parse_NonKwArg(arg) for arg in node.args if not arg.keyword)
         kwargs = dict(self.parse_KwArg(arg) for arg in node.args if arg.keyword)
         result = None
@@ -159,7 +157,7 @@ class NodeSelector(cst.CSTVisitor):
             return self.variables[node.value]
         return node
 
-    def resolve_Element(self, node: cst.Element) -> Optional[Node]:
+    def resolve_Element(self, node: cst.Element) -> Node | None:
         return self.resolve(node.value)
 
     def resolve_Tuple(self, node: cst.Tuple) -> Sequence:

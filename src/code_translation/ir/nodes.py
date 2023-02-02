@@ -42,7 +42,7 @@ class CSTTranslation(NamedTuple):
 
 class IRNode(ABC):
     parent: Optional["IRNode"]
-    library: Optional[str]
+    library: str | None
 
     def __init__(self, parent=None, library=None, *args, **kwargs):
         self.parent = parent
@@ -77,7 +77,6 @@ class DataFrameNode(IRNode):
         pass
 
     def to_cst_translation(self, sql_access_method) -> CSTTranslation:
-
         if self.tempVars:
             precode = [tempvar.to_cst_node(sql_access_method, self.con) for tempvar in self.tempVars]
             code = cst.Call(
@@ -176,7 +175,7 @@ class JoinNode(DataFrameNode):
         self,
         left: DataFrameNode,
         right: DataFrameNode,
-        how: Optional[str] = None,
+        how: str | None = None,
         left_on: list[str] | Literal["key", "natural"] = "key",
         right_on: list[str] | Literal["key", "natural"] = "key",
         *args,
@@ -211,7 +210,7 @@ class JoinNode(DataFrameNode):
         return self.tempVar_for_query_cols("temp")
 
     @property
-    def sql_string(self) -> Optional[str]:
+    def sql_string(self) -> str | None:
         join_operator = "JOIN"
         if self.how:
             join_operator = f"{self.how.upper()} {join_operator}"
@@ -290,7 +289,7 @@ class AggregationNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self) -> Optional[str]:
+    def sql_string(self) -> str | None:
         cols = self.node.columns
         from_where = self.node.sql_string[self.node.sql_string.find("FROM") :]
         if isinstance(cols, TempVar):
