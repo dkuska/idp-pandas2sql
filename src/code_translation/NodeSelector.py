@@ -148,9 +148,11 @@ class NodeSelector(cst.CSTVisitor):
         if result:
             return result
 
-    def resolve_Name(self, node: cst.Name) -> Node:
-        if node.value in ["True", "False"]:
-            return node
+    def resolve_Name(self, node: cst.Name):
+        if node.value == "True":
+            return True
+        if node.value == "False":
+            return False
         if node.value not in self.variables:
             raise UnresolvableCSTNode(f'Name ("{node.value}")')
         if isinstance(self.variables[node.value], IRNode):
@@ -168,6 +170,9 @@ class NodeSelector(cst.CSTVisitor):
 
     def resolve_SimpleString(self, node: cst.SimpleString) -> str:
         return node.evaluated_value
+
+    def resolve_List(self, node: cst.List) -> list:
+        return [self.resolve(element) for element in node.elements]
 
     def parse_NonKwArg(self, node: cst.Arg) -> Node:
         arg_value = self.resolve(node.value)

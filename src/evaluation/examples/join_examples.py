@@ -2,14 +2,14 @@ from .pipeline_example import PipelineExample
 
 join_pipeline_examples = [
     PipelineExample(
-        "normal join",
+        "normal join on indices",
         """
         import pandas as pd
 
         con = "sqlite:///test.db"
 
-        df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT * FROM table2", con)
+        df1 = pd.read_sql("SELECT * FROM table1", con).set_index("key1")
+        df2 = pd.read_sql("SELECT * FROM table2", con).set_index("key2")
 
         result = df1.join(df2)
         result # do something with result
@@ -19,19 +19,19 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) JOIN (SELECT * FROM table2)", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2", con)
         result # do something with result
         """,
     ),
     PipelineExample(
-        "inner join",
+        "inneer join on indices",
         """
         import pandas as pd
 
         con = "sqlite:///test.db"
 
-        df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT * FROM table2", con)
+        df1 = pd.read_sql("SELECT * FROM table1", con).set_index("key1")
+        df2 = pd.read_sql("SELECT * FROM table2", con).set_index("key2")
 
         result = df1.join(df2, how="inner")
         result # do something with result
@@ -41,34 +41,12 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) INNER JOIN (SELECT * FROM table2)", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 INNER JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2", con)
         result # do something with result
         """,
     ),
     PipelineExample(
-        "left join",
-        """
-        import pandas as pd
-
-        con = "sqlite:///test.db"
-
-        df1 = pd.read_sql("SELECT * FROM table1", con)
-        df2 = pd.read_sql("SELECT * FROM table2", con)
-
-        result = df1.join(df2, how="left")
-        result # do something with result
-        """,
-        """
-        import pandas as pd
-
-        con = "sqlite:///test.db"
-
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) LEFT JOIN (SELECT * FROM table2)", con)
-        result # do something with result
-        """,
-    ),
-    PipelineExample(
-        "join on key",
+        "join on attribute",
         """
         import pandas as pd
 
@@ -90,7 +68,7 @@ join_pipeline_examples = [
         """,
     ),
     PipelineExample(
-        "inner join on key",
+        "join on multiple attributes",
         """
         import pandas as pd
 
@@ -99,7 +77,7 @@ join_pipeline_examples = [
         df1 = pd.read_sql("SELECT * FROM table1", con)
         df2 = pd.read_sql("SELECT * FROM table2", con)
 
-        result = df1.join(df2, on="key", how="inner")
+        result = df1.join(df2, on=["key1", "key2"])
         result # do something with result
         """,
         """
@@ -107,12 +85,12 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 INNER JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key1 AND S1.key2 = S2.key2", con)
         result # do something with result
         """,
     ),
     PipelineExample(
-        "join with sort",
+        "join on attribute with sort",
         """
         import pandas as pd
 
@@ -120,6 +98,28 @@ join_pipeline_examples = [
 
         df1 = pd.read_sql("SELECT * FROM table1", con)
         df2 = pd.read_sql("SELECT * FROM table2", con)
+
+        result = df1.join(df2, "key", sort=True)
+        result # do something with result
+        """,
+        """
+        import pandas as pd
+
+        con = "sqlite:///test.db"
+
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key ORDER BY key ASC", con)
+        result # do something with result
+        """,
+    ),
+    PipelineExample(
+        "join on indices with sort",
+        """
+        import pandas as pd
+
+        con = "sqlite:///test.db"
+
+        df1 = pd.read_sql("SELECT * FROM table1", con).set_index("key1")
+        df2 = pd.read_sql("SELECT * FROM table2", con).set_index("key2")
 
         result = df1.join(df2, sort=True)
         result # do something with result
@@ -129,8 +129,8 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        temp = pd.read_sql("SELECT * FROM (SELECT * FROM table1) JOIN (SELECT * FROM table2) LIMIT 0", con).columns
-        result = pd.read_sql(f"SELECT * FROM (SELECT * FROM table1) JOIN (SELECT * FROM table2) ORDER BY {', '.join(temp)} ASC", con)
+        temp = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2 LIMIT 0", con).columns
+        result = pd.read_sql(f"SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2 ORDER BY {', '.join(temp)} ASC", con)
         result # do something with result
         """,
     ),
