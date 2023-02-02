@@ -13,7 +13,7 @@ from ..ir.nodes import (
 from .inputModule import InputModule
 
 
-def make_list(value: str | list[str]) -> list[str]:
+def make_list_of_str(value: str | list[str]) -> list[str]:
     if isinstance(value, str):
         return [value]
     return value
@@ -36,24 +36,24 @@ class PandasInput(InputModule):
     # df methods
 
     def visit_df_sort_values(self, df_node: DataFrameNode, by, *, ascending=True, **kwargs):
-        return SortNode(df_node, make_list(by), ascending, **kwargs)
+        return SortNode(df_node, make_list_of_str(by), ascending, **kwargs)
 
     def visit_df_join(
         self,
         df_node: DataFrameNode,
         other: DataFrameNode,
         on: str | list[str] | None = None,
-        how: str | None = None,
+        how: str = "left",
         lsuffix="",
         rsuffix="",
         sort=False,
-        validate: bool | None = None,
+        validate: str | None = None,
     ):
         _on: list[str] | Literal["key"]
         if on is None:
             _on = "key"
         else:
-            _on = make_list(on)
+            _on = make_list_of_str(on)
 
         join_node = JoinNode(
             df_node, other, how=how, left_on=_on, right_on=_on, lsuffix=lsuffix, rsuffix=rsuffix, validate=validate
@@ -77,17 +77,17 @@ class PandasInput(InputModule):
         suffixes=("_x", "_y"),
         copy=True,
         indicator=False,
-        validate: bool | None = None,
+        validate: str | None = None,
     ):
         _left_on: list[str] | Literal["key", "natural"] = "natural"
         _right_on: list[str] | Literal["key", "natural"] = "natural"
         if on:
-            _left_on = make_list(on)
-            _right_on = make_list(on)
+            _left_on = make_list_of_str(on)
+            _right_on = make_list_of_str(on)
         if left_on:
-            _left_on = make_list(left_on)
+            _left_on = make_list_of_str(left_on)
         if right_on:
-            _right_on = make_list(right_on)
+            _right_on = make_list_of_str(right_on)
         if left_index:
             _left_on = "key"
         if right_index:
@@ -107,12 +107,12 @@ class PandasInput(InputModule):
             validate=validate,
         )
         if sort:
-            orderby = _left_on if isinstance(_left_on, list) else ["*"]  # TODO: Add key sorting ability
+            orderby = _left_on if isinstance(_left_on, list) else ["*"]  # TODO: sort by key
             return SortNode(join_node, orderby)
         return join_node
 
     def visit_df_set_index(self, df_node: DataFrameNode, keys: str | list[str], *args, **kwargs):
-        return SetKeyNode(df_node, make_list(keys), *args, **kwargs)
+        return SetKeyNode(df_node, make_list_of_str(keys), *args, **kwargs)
 
     def visit_df_aggregate(self, df_node: DataFrameNode, func: str | cst.CSTNode, *args, **kwargs):
         if isinstance(func, cst.Name):
