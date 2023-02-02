@@ -5,7 +5,7 @@ VENV=$(VENV_NAME)/bin/
 .PHONY: setup
 setup: 			## Create environment and install base packages
 	@echo "Creating an virtual env"
-	@python3 -m venv $(VENV_NAME)
+	@python3.10 -m venv $(VENV_NAME)
 
 	@echo "Installing base packages"
 	@$(VENV)pip3 install pre-commit black isort autoflake flake8 pyproject-flake8 pytest
