@@ -8,6 +8,12 @@ from .examples import PipelineCode, PipelineExample
 warnings.filterwarnings("ignore")
 
 DB_CONFIG = POSTGRES_TPC_H_1GB_CONFIG
+ITERATIONS = 3
+
+
+def combine_results(results: float) -> float:
+    return sum(results) / len(results)  # mean
+    # return results[len(results) // 2] # median
 
 
 def evaluate_connectoin():
@@ -40,8 +46,22 @@ class Evaluator:
         unoptimized_execution_time = self.evaluate_function(self.pipeline.code)
         optimized_execution_time = self.evaluate_function(self.pipeline.optimized_code)
         print(f"Unoptimized code execution time: {unoptimized_execution_time:.2f}s")
-        print(f"optimized code execution time: {optimized_execution_time:.2f}s")
+        print(f"Optimized code execution time: {optimized_execution_time:.2f}s")
         print("----------------")
+
+    def multiple_evaluate(self, optimized: bool = False):
+        print(f"Evaluating {'optimized' if optimized else 'unoptimized'} {self.pipeline.name.upper()}:")
+        results = []
+
+        for _ in range(ITERATIONS):
+            if optimized:
+                result = self.evaluate_function(self.pipeline.optimized_code)
+            else:
+                result = self.evaluate_function(self.pipeline.code)
+            results.append(result)
+            print(f"Code execution time: {result:.2f}s")
+
+        print(f"Average code execution time: {combine_results(results):.2f}s")
 
     def evaluate_transofmation(self):
         start = time.time()
