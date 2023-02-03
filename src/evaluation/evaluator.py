@@ -107,7 +107,6 @@ partsupp_join_parts_pipeline = PipelineExample(
         partsupps = pandas.read_sql("SELECT * FROM partsupp", conn)
         parts = pandas.read_sql("SELECT * FROM part", conn)
         result = pandas.merge(partsupps, parts, left_on="ps_partkey", right_on="p_partkey", how="left")
-        # results = pandas.merge(line_items, orders, on="orderkey", suffixes=("l_", "o_"), how="left")
     """,
     """
     import pandas
@@ -148,8 +147,8 @@ sum_orders_totalprice_pipeline = PipelineExample(
     import pandas
     from .db import PostgresConnection
     with PostgresConnection(DB_CONFIG) as conn:
-        line_items_discounts = pandas.read_sql("SELECT o_totalprice FROM orders", conn)
-        results = line_items_discounts.sum(axis=0)[0]
+        order_prices = pandas.read_sql("SELECT o_totalprice FROM orders", conn)
+        results = order_prices.sum(axis=0)[0]
     """,
     """
     import pandas
@@ -176,107 +175,64 @@ sorted_orders_by_total_price = PipelineExample(
     """,
 )
 
-orders_join_one_customer_pipeline = PipelineExample(
-    "Orders of Customer with name Customer#000000002",
+orders_join_with_early_customers_pipeline = PipelineExample(
+    "Orders of Customer with id smaller than 1000",
     """
     import pandas
     from .db import PostgresConnection
     with PostgresConnection(DB_CONFIG) as conn:
-        customer = pandas.read_sql("SELECT * FROM customer WHERE c_name = 'Customer#000000002'", conn)
+        customer = pandas.read_sql("SELECT * FROM customer WHERE c_name LIKE '%' || '000000' ||'%'", conn)
         orders = pandas.read_sql("SELECT * FROM orders", conn)
         results = pandas.merge(customer, orders, left_on="c_custkey", right_on="o_custkey", how="inner")
-        print(customer.memory_usage())
-        print(orders.memory_usage())
-        print(results.memory_usage())
     """,
     """
     import pandas
     from .db import PostgresConnection
     with PostgresConnection(DB_CONFIG) as conn:
         results = pandas.read_sql(
-        "SELECT * FROM \
-            (SELECT * FROM customer WHERE c_name = 'Customer#000000002') AS t1\
-            INNER JOIN (SELECT * FROM orders) AS t2\
-            ON t1.c_custkey = t2.o_custkey",
-        conn,
-    )
-    print(results.memory_usage())
+            "SELECT * FROM \
+                (SELECT * FROM customer WHERE c_name LIKE '%' || '000000' ||'%') AS t1\
+                INNER JOIN (SELECT * FROM orders) AS t2\
+                ON t1.c_custkey = t2.o_custkey",
+            conn,
+        )
+    
+    """,
+)
+
+orders_join_with_half_customers_pipeline = PipelineExample(
+    "Orders of Customer with id smaller than 1000000",
+    """
+    import pandas
+    from .db import PostgresConnection
+    with PostgresConnection(DB_CONFIG) as conn:
+        customer = pandas.read_sql("SELECT * FROM customer WHERE c_name LIKE '%' || '000' ||'%'", conn) # 0.89s on the db
+        orders = pandas.read_sql("SELECT * FROM orders", conn) # 10.65s on the db 
+        results = pandas.merge(customer, orders, left_on="c_custkey", right_on="o_custkey", how="inner") # 11.20s
+    """,
+    """
+    import pandas
+    from .db import PostgresConnection
+    with PostgresConnection(DB_CONFIG) as conn:
+        results = pandas.read_sql(
+            "SELECT * FROM \
+                (SELECT * FROM customer WHERE c_name LIKE '%' || '000' ||'%') AS t1\
+                INNER JOIN (SELECT * FROM orders) AS t2\
+                ON t1.c_custkey = t2.o_custkey",
+            conn,
+        ) # 19.58s on the db
     """,
 )
 
 
 def main():
-    Evaluator(lineitem_join_orders_pipeline).evaluate()
-    Evaluator(partsupp_join_parts_pipeline).evaluate()
-    Evaluator(max_lineitem_discount_pipeline).evaluate()
-    Evaluator(sum_orders_totalprice_pipeline).evaluate()
-    Evaluator(orders_join_one_customer_pipeline).evaluate()
-    Evaluator(sorted_orders_by_total_price).evaluate()
+    Evaluator(lineitem_join_orders_pipeline).multiple_evaluate()
 
 
 if __name__ == "__main__":
     main()
 
 """
-s = 1
-Evaluating LINEITEMS JOIN ORDERS:
-Unoptimized code execution time: 10.17s
-optimized code execution time: 14.85s
-----------------
-Evaluating PARTSUPP JOIN PARTS:
-Unoptimized code execution time: 2.27s
-optimized code execution time: 3.95s
-----------------
-Evaluating MAX DISCOUNT OF LINEITEMS:
-Unoptimized code execution time: 5.25s
-optimized code execution time: 0.36s
-----------------
-Evaluating SUM TOTALPRICE OF ORDERS:
-Unoptimized code execution time: 1.42s
-optimized code execution time: 0.09s
-----------------
-
-s = 10
-Evaluating LINEITEMS JOIN ORDERS:
-Unoptimized code execution time: 99.69s
-{
-    lineitem: 959.8 MB in 67.6s (13.1s on the db),
-    orders: 24.0 MB in 17.8s (3.8s on the db),
-    results: 2399.4 MB in 10.5s,
-}
-optimized code execution time: 145.54s
-{
-    results: 1919.6 MB in 145.4s (38.8s on the db),
-}
-----------------
-Evaluating PARTSUPP JOIN PARTS:
-Unoptimized code execution time: 22.60s
-optimized code execution time: 37.68s
-----------------
-Evaluating MAX DISCOUNT OF LINEITEMS:
-Unoptimized code execution time: 49.11s
-optimized code execution time: 2.26s
-----------------
-Evaluating SUM TOTALPRICE OF ORDERS:
-Unoptimized code execution time: 13.87s
-optimized code execution time: 0.72s
-----------------
-Evaluating ORDERS OF CUSTOMER WITH NAME CUSTOMER#000000002:
-Unoptimized code execution time: 43.18s
-{
-    lineitem: 192 B,
-    orders: 1 GB,
-    results: 432 B,
-}
-optimized code execution time: 0.72s
-{
-    results: 536 B,
-}
-----------------
-Evaluating SORT OF ORDERS BY TOTALPRICE:
-Unoptimized code execution time: 52.34s
-optimized code execution time: 47.28s
-
 transofrmation time: 0.01s for all pipelines
 connection time: 0.43s for all pipelines
 """
