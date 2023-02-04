@@ -1,19 +1,38 @@
-import ast
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional
+from dataclasses import dataclass
+from typing import Literal, NamedTuple, Optional
 
 import libcst as cst
 
 # TODO:
 # when translating forwards the args
+# split this file into class files
 
 
-def str_code_to_cst(code: str) -> cst.CSTNode:
+def str_code_to_cst(code: str) -> cst.BaseExpression:
     return cst.parse_expression(code)
 
 
-def evaluate_cst(node: cst.CSTNode) -> any:
-    return ast.literal_eval(cst.Module(body=[node]).code)
+@dataclass
+class TempVar:
+    var_name: str
+    sql: str
+
+    def to_cst_node(self, sql_access_method: cst.BaseExpression, con: cst.BaseExpression):
+        statement = cst.Assign(
+            targets=(cst.AssignTarget(target=cst.Name(value=self.var_name)),),
+            value=cst.Attribute(
+                value=cst.Call(
+                    func=sql_access_method,
+                    args=[
+                        cst.Arg(value=str_code_to_cst(f'"{self.sql} LIMIT 0"')),
+                        cst.Arg(value=con),
+                    ],
+                ),
+                attr=cst.Name(value="columns"),
+            ),
+        )
+        return statement
 
 
 class CSTTranslation(NamedTuple):
@@ -24,7 +43,7 @@ class CSTTranslation(NamedTuple):
 
 class IRNode(ABC):
     parent: Optional["IRNode"]
-    library: Optional[str]
+    library: str | None
 
     def __init__(self, parent=None, library=None, *args, **kwargs):
         self.parent = parent
@@ -39,92 +58,36 @@ class IRNode(ABC):
 
 class DataFrameNode(IRNode):
     @property
-    def sql_string(self):
-        pass
-
     @abstractmethod
-    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
+    def sql_string(self) -> str:
         pass
 
     @property
-    def con(self):
-        return self.node.con
-
-
-class SQLNode(DataFrameNode):
-    def __init__(self, sql: str, con: cst.CSTNode, *args, **kwargs):
-        self.sql = sql
-        self._con = con
-
-        super().__init__(*args, **kwargs)
+    @abstractmethod
+    def tempVars(self) -> list[TempVar]:
+        pass
 
     @property
-    def sql_string(self) -> str:
-        return self.sql
+    @abstractmethod
+    def key(self) -> list[str]:
+        pass
 
     @property
-    def con(self) -> cst.CSTNode:
-        return self._con
+    @abstractmethod
+    def columns(self) -> list[str] | TempVar:
+        pass
+
+    @property
+    @abstractmethod
+    def con(self) -> cst.Name:
+        pass
 
     def to_cst_translation(self, sql_access_method) -> CSTTranslation:
-        func = sql_access_method
-        args = [
-            cst.Arg(value=cst.SimpleString(value='"' + self.sql_string + '"')),
-            cst.Arg(value=self.con),
-        ]
-
-        return CSTTranslation(code=cst.Call(func=func, args=args))
-
-
-class SortNode(DataFrameNode):
-    def __init__(
-        self,
-        node: DataFrameNode,
-        by: Optional[str] = None,
-        ascending: bool = True,
-        *args,
-        **kwargs,
-    ):
-        node.parent = self
-        self.node = node
-        if isinstance(by, cst.CSTNode):
-            by = evaluate_cst(by)
-        if isinstance(by, str):
-            by = [by]
-        self.by = by
-        if isinstance(ascending, cst.CSTNode):
-            ascending = evaluate_cst(ascending)
-        self.ascending = ascending
-
-        super().__init__(*args, **kwargs)
-
-    @property
-    def sql_string(self) -> Optional[str]:
-        if self.node.sql_string:
-            if self.by:
-                return f"{self.node.sql_string} ORDER BY {', '.join(self.by)} {'ASC' if self.ascending else 'DESC'}"
-
-            selected_columns = selected_columns_in_query(self.node.sql_string)
-            if selected_columns != ["*"]:
-                return f"{self.node.sql_string} ORDER BY {', '.join(selected_columns)} {'ASC' if self.ascending else 'DESC'}"
-
-    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
-        selected_columns = selected_columns_in_query(self.node.sql_string)
-        if not self.sql_string and selected_columns == ["*"]:
-            variable_name = "temp"
-            assign_target = cst.AssignTarget(target=cst.Name(value=variable_name))
-            attribute = cst.Name(value="columns")
-            call = cst.Call(
-                func=sql_access_method,
-                args=[cst.Arg(value=str_code_to_cst(f'"{self.node.sql_string} LIMIT 0"')), cst.Arg(value=self.con)],
-            )
-            precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
-            sql_query = self.node.sql_string + f" ORDER BY {{', '.join({variable_name})}} "
-            sql_query += "ASC" if self.ascending else "DESC"
-
+        if self.tempVars:
+            precode = [tempvar.to_cst_node(sql_access_method, self.con) for tempvar in self.tempVars]
             code = cst.Call(
                 func=sql_access_method,
-                args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
+                args=[cst.Arg(value=str_code_to_cst('f"' + self.sql_string + '"')), cst.Arg(value=self.con)],
             )
         else:
             precode = []
@@ -135,14 +98,97 @@ class SortNode(DataFrameNode):
 
         return CSTTranslation(code=code, precode=precode)
 
+    def tempVar_for_query_cols(self, var_name: str):
+        return TempVar(var_name=var_name, sql=self.sql_string)
+
+
+class SQLNode(DataFrameNode):
+    def __init__(self, sql: str, con: cst.Name, *args, **kwargs):
+        self.sql = sql
+        self._con = con
+
+        super().__init__(*args, **kwargs)
+
+    @property
+    def sql_string(self) -> str:
+        return self.sql
+
+    @property
+    def tempVars(self) -> list[TempVar]:
+        return []
+
+    @property
+    def columns(self) -> list[str] | TempVar:
+        selected_columns = selected_columns_in_query(self.sql_string)
+        if selected_columns != ["*"]:
+            return selected_columns
+        return self.tempVar_for_query_cols("temp")
+
+    @property
+    def con(self) -> cst.Name:
+        return self._con
+
+    @property
+    def key(self) -> list[str]:
+        return []  # could be obtained from a prequery
+
+
+class SortNode(DataFrameNode):
+    def __init__(
+        self,
+        node: DataFrameNode,
+        by: list[str],
+        ascending: bool = True,
+        *args,
+        **kwargs,
+    ):
+        node.parent = self
+        self.node = node
+        if by == ["key"]:
+            if self.key:
+                self.by = self.key
+            else:
+                raise Exception("Sorting key is not defined")
+        else:
+            self.by = by
+        self.ascending = ascending
+
+        super().__init__(*args, **kwargs)
+
+    @property
+    def sql_string(self) -> str:
+        return f"{self.node.sql_string} ORDER BY {', '.join(self.by)} {'ASC' if self.ascending else 'DESC'}"
+
+    @property
+    def tempVars(self) -> list[TempVar]:
+        tempVars = self.node.tempVars
+        if self.by == ["key"]:
+            cols = self.node.columns
+            if isinstance(cols, TempVar) and cols not in tempVars:
+                tempVars.append(cols)
+        return tempVars
+
+    @property
+    def columns(self) -> list[str] | TempVar:
+        return self.node.columns
+
+    @property
+    def con(self) -> cst.Name:
+        return self.node.con
+
+    @property
+    def key(self) -> list[str]:
+        return self.node.key
+
 
 class JoinNode(DataFrameNode):
     def __init__(
         self,
         left: DataFrameNode,
         right: DataFrameNode,
-        how: Optional[str] = None,
-        on: Optional[str] = None,
+        how: str | None = None,
+        left_on: list[str] | Literal["key", "natural"] = "key",
+        right_on: list[str] | Literal["key", "natural"] = "key",
         *args,
         **kwargs,
     ):
@@ -152,7 +198,8 @@ class JoinNode(DataFrameNode):
         self.left = left
         self.right = right
         self.how = how
-        self.on = on
+        self.left_on = left_on
+        self.right_on = right_on
 
         super().__init__(*args, **kwargs)
 
@@ -166,92 +213,83 @@ class JoinNode(DataFrameNode):
             return left_con
 
     @property
-    def node(self):
-        return self.left
+    def key(self) -> list[str]:
+        return self.left.key  # or self.right.key
 
     @property
-    def sql_string(self) -> Optional[str]:
+    def columns(self) -> list[str] | TempVar:
+        leftcols = self.left.columns
+        rightcols = self.right.columns
+        if isinstance(leftcols, list) and isinstance(rightcols, list):
+            return list(set(leftcols + rightcols))
+        return self.tempVar_for_query_cols("temp")
+
+    @property
+    def sql_string(self) -> str | None:
         join_operator = "JOIN"
         if self.how:
             join_operator = f"{self.how.upper()} {join_operator}"
 
         # Extract query and additional information from left node
-        left_set_key = False
-        if isinstance(self.left, SQLNode):
-            left_sql = self.left.sql_string
-        elif isinstance(self.left, JoinNode):
-            left_sql = self.left.sql_string
-        elif isinstance(self.left, AggregationNode):
-            # This is where the dependency injection starts to get complicated
-            # TODO: find out if there is a precode condition for the CSTTranslation
-            left_cst_translation = self.left.to_cst_translation(sql_access_method="")  #
-            if left_cst_translation.precode != []:
-                raise Exception("No support for prequeries in JoinNodes yet")  # TODO: Investigate this further...
-            left_sql = self.left.sql_string
-        elif isinstance(self.left, SetKeyNode):
-            left_set_key = True
-            left_sql = self.left.node.sql_string
-            left_key = self.left.key
+
+        left_sql = self.left.sql_string
+        left_on: list[str]
+        if self.left_on == "key":
+            assert isinstance(self.left, SetKeyNode)  # TODO: Don't do that
+            left_on = self.left.key
         else:
-            return None
+            assert isinstance(self.left_on, list)  # this is fine
+            left_on = self.left_on
 
         # Extract query and additional information from right node
-        right_set_key = False
-        if isinstance(self.right, SQLNode):
-            right_sql = self.right.sql_string
-        elif isinstance(self.right, JoinNode):
-            right_sql = self.right.sql_string
-        elif isinstance(self.right, AggregationNode):
-            # Same as above with the left-hand side...
-            right_cst_translation = self.right.to_cst_translation(sql_access_method="")
-            if right_cst_translation.precode != []:
-                raise Exception("No support for prequeries in JoinNodes yet")
-            right_sql = self.right.sql_string
-        elif isinstance(self.right, SetKeyNode):
-            right_set_key = True
-            right_sql = self.right.node.sql_string
-            right_key = self.right.key  # TODO: Implement for more complex types
+        right_sql = self.right.sql_string
+        right_on: list[str]
+        if self.right_on == "key":
+            assert isinstance(self.right, SetKeyNode)  # TODO: Don't do that
+            right_on = self.right.key
         else:
-            return None
+            assert isinstance(self.right_on, list)  # this is fine
+            right_on = self.right_on
 
         # Build query string
-        if left_set_key and right_set_key:
-            # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
-            left_table_alias = "S1"
-            right_table_alias = "S2"
-            return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{left_key} = {right_table_alias}.{right_key}"
-        elif self.on:
-            left_table_alias = "S1"
-            right_table_alias = "S2"
-            return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {left_table_alias}.{self.on} = {right_table_alias}.{self.on}"
-        else:
-            return f"SELECT * FROM ({left_sql}) {join_operator} ({right_sql})"
+        # TODO: DataFrameNode needs key also aka 'index_col' in read_sql
+        left_table_alias = "S1"
+        right_table_alias = "S2"
+        return f"SELECT * FROM ({left_sql}) AS {left_table_alias} {join_operator} ({right_sql}) AS {right_table_alias} ON {' AND '.join(f'{left_table_alias}.{left} = {right_table_alias}.{right}' for (left, right) in zip(left_on, right_on))}"
 
-    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
-        query_str = '"' + self.sql_string + '"'
-
-        # Build cst.Assign Object
-        func = sql_access_method
-        # Assume both left and right have the same con
-        args = [cst.Arg(value=cst.SimpleString(value=query_str)), cst.Arg(value=self.con)]
-
-        return CSTTranslation(code=cst.Call(func=func, args=args))
+    @property
+    def tempVars(self) -> list[TempVar]:
+        return list(set(self.left.tempVars + self.right.tempVars))
 
 
 class SetKeyNode(DataFrameNode):
-    def __init__(self, node: DataFrameNode, key: cst.CSTNode, *args, **kwargs):
+    def __init__(self, node: DataFrameNode, key: list[str], *args, **kwargs):
         node.parent = self
 
         self.node = node
-        self.key = key
+        self._key = key
 
         super().__init__(*args, **kwargs)
 
-    def to_cst_translation(self) -> CSTTranslation:
-        func = cst.Attribute(value=self.node.to_cst_statement(), attr="join")
-        args = [cst.Arg(value=self.key)]
+    @property
+    def sql_string(self) -> str:
+        return self.node.sql_string
 
-        return CSTTranslation(code=cst.Call(func=func, args=args))
+    @property
+    def tempVars(self) -> list[TempVar]:
+        return self.node.tempVars
+
+    @property
+    def key(self) -> list[str]:
+        return self._key
+
+    @property
+    def columns(self) -> list[str] | TempVar:
+        return self.node.columns
+
+    @property
+    def con(self) -> cst.Name:
+        return self.node.con
 
 
 class AggregationNode(DataFrameNode):
@@ -270,49 +308,35 @@ class AggregationNode(DataFrameNode):
         super().__init__(*args, **kwargs)
 
     @property
-    def sql_string(self) -> Optional[str]:
-        if self.node.sql_string:
-            query = self.node.sql_string
-            selected_columns = selected_columns_in_query(query)
-            for column in selected_columns:
-                query = query.replace(column, f"{self.aggregation.upper()}({column}) AS {self.aggregation}_{column}", 1)
-
-            return query
-
-    def to_cst_translation(self, sql_access_method) -> CSTTranslation:
-        selected_columns = selected_columns_in_query(self.node.sql_string)
-        precode = []
-        sql_query = self.sql_string
-
-        if selected_columns == ["*"]:
-            variable_name = "temp"
-            assign_target = cst.AssignTarget(target=cst.Name(value=variable_name))
-            attribute = cst.Name(value="columns")
-            call = cst.Call(
-                func=sql_access_method,
-                args=[cst.Arg(value=str_code_to_cst(f'"{self.node.sql_string} LIMIT 0"')), cst.Arg(value=self.con)],
-            )
-            precode = [cst.Assign(targets=(assign_target,), value=cst.Attribute(value=call, attr=attribute))]
-            sql_query = self.node.sql_string.replace(
-                "*",
-                f"{{', '.join(['{self.aggregation.upper()}(' + c + ') AS {self.aggregation}_' + c for c in {variable_name}])}}",
-                1,
-            )
-
-            code = cst.Call(
-                func=sql_access_method,
-                args=[cst.Arg(value=str_code_to_cst('f"' + sql_query + '"')), cst.Arg(value=self.con)],
-            )
-
+    def sql_string(self) -> str | None:
+        cols = self.node.columns
+        from_where = self.node.sql_string[self.node.sql_string.find("FROM") :]
+        if isinstance(cols, TempVar):
+            return f"SELECT {{', '.join(f'{self.aggregation.upper()}({{c}}) AS {self.aggregation}_{{c}}' for c in {cols.var_name})}} {from_where}"
         else:
-            code = cst.Call(
-                func=sql_access_method,
-                args=[cst.Arg(value=str_code_to_cst('"' + sql_query + '"')), cst.Arg(value=self.con)],
-            )
+            return f"SELECT {', '.join(f'{self.aggregation.upper()}({c}) AS {self.aggregation}_{c}' for c in cols)} {from_where}"
 
-        return CSTTranslation(code=code, precode=precode)
+    @property
+    def tempVars(self) -> list[TempVar]:
+        tempVars = self.node.tempVars
+        cols = self.node.columns
+        if isinstance(cols, TempVar) and cols not in tempVars:
+            tempVars.append(cols)
+        return tempVars
+
+    @property
+    def key(self) -> list[str]:
+        return []
+
+    @property
+    def columns(self) -> list[str] | TempVar:
+        return self.tempVar_for_query_cols("temp")
+
+    @property
+    def con(self) -> cst.Name:
+        return self.node.con
 
 
-def selected_columns_in_query(query):
+def selected_columns_in_query(query: str):
     lower_query = query.lower()
     return [column.strip() for column in (lower_query.split("select"))[1].split("from")[0].split(",")]

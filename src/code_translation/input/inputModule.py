@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ...exceptions import LibMethodUnresolved, LibMethodWithoutHandler
 from ..ir.nodes import IRNode
 
@@ -15,7 +13,7 @@ class InputModule:
         return []
 
     @property
-    def sql_access_method(self) -> Optional[str]:
+    def sql_access_method(self) -> str | None:
         pass
 
     def resolve_call(self, method_name: str, is_df: bool, *args, **kwargs) -> IRNode:

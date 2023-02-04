@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 120
-target-version = ["py39"]
+target-version = ["py310"]
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -12,7 +12,7 @@ exclude = '''
 [tool.isort]
 profile = "black"
 skip = "env"
-py_version = 39
+py_version = 310
 
 [tool.flake8]
 exclude = "__pycache__,env"
