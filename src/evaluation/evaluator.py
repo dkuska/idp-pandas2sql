@@ -2,12 +2,12 @@ import time
 import warnings
 
 from ..code_translation.orchestrator import Orchestrator
-from .db import POSTGRES_TPC_H_1GB_CONFIG
+from .db import POSTGRES_TPC_H_30GB_CONFIG
 from .examples import PipelineCode, PipelineExample
 
 warnings.filterwarnings("ignore")
 
-DB_CONFIG = POSTGRES_TPC_H_1GB_CONFIG
+DB_CONFIG = POSTGRES_TPC_H_30GB_CONFIG
 ITERATIONS = 3
 
 

@@ -19,6 +19,10 @@ POSTGRES_TPC_H_10GB_CONFIG = PostgresConfig(
     host="172.31.0.10", port="5432", database="tpc_h_10gb", user="admin", password="idp22-hisssql"
 )
 
+POSTGRES_TPC_H_30GB_CONFIG = PostgresConfig(
+    host="172.31.0.10", port="5432", database="tpc_h_30gb", user="admin", password="idp22-hisssql"
+)
+
 LOCAL_CONFIG_01GB = PostgresConfig(
     host="localhost", port="5432", database="tpc_h_01gb", user="postgres", password="mypassword"
 )
