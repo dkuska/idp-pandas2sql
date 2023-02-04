@@ -12,7 +12,7 @@ exclude = '''
 [tool.isort]
 profile = "black"
 skip = "env"
-py_version = 39
+py_version = 310
 
 [tool.flake8]
 exclude = "__pycache__,env"

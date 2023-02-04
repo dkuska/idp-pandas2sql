@@ -19,7 +19,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 LEFT JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2", con)
         result # do something with result
         """,
     ),
@@ -63,7 +63,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 LEFT JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key", con)
         result # do something with result
         """,
     ),
@@ -85,7 +85,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key1 AND S1.key2 = S2.key2", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 LEFT JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key1 AND S1.key2 = S2.key2", con)
         result # do something with result
         """,
     ),
@@ -99,7 +99,7 @@ join_pipeline_examples = [
         df1 = pd.read_sql("SELECT * FROM table1", con)
         df2 = pd.read_sql("SELECT * FROM table2", con)
 
-        result = df1.join(df2, "key", sort=True)
+        result = df1.join(df2, "attribute", sort=True)
         result # do something with result
         """,
         """
@@ -107,7 +107,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key = S2.key ORDER BY key ASC", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 LEFT JOIN (SELECT * FROM table2) AS S2 ON S1.attribute = S2.attribute ORDER BY attribute ASC", con)
         result # do something with result
         """,
     ),
@@ -129,8 +129,7 @@ join_pipeline_examples = [
 
         con = "sqlite:///test.db"
 
-        temp = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2 LIMIT 0", con).columns
-        result = pd.read_sql(f"SELECT * FROM (SELECT * FROM table1) AS S1 JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2 ORDER BY {', '.join(temp)} ASC", con)
+        result = pd.read_sql("SELECT * FROM (SELECT * FROM table1) AS S1 LEFT JOIN (SELECT * FROM table2) AS S2 ON S1.key1 = S2.key2 ORDER BY key1 ASC", con)
         result # do something with result
         """,
     ),

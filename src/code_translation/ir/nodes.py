@@ -6,6 +6,7 @@ import libcst as cst
 
 # TODO:
 # when translating forwards the args
+# split this file into class files
 
 
 def str_code_to_cst(code: str) -> cst.BaseExpression:
@@ -68,6 +69,11 @@ class DataFrameNode(IRNode):
 
     @property
     @abstractmethod
+    def key(self) -> list[str]:
+        pass
+
+    @property
+    @abstractmethod
     def columns(self) -> list[str] | TempVar:
         pass
 
@@ -122,6 +128,10 @@ class SQLNode(DataFrameNode):
     def con(self) -> cst.Name:
         return self._con
 
+    @property
+    def key(self) -> list[str]:
+        return []  # could be obtained from a prequery
+
 
 class SortNode(DataFrameNode):
     def __init__(
@@ -134,8 +144,11 @@ class SortNode(DataFrameNode):
     ):
         node.parent = self
         self.node = node
-        if by == ["*"] and isinstance(self.node.columns, list):
-            self.by = self.node.columns
+        if by == ["key"]:
+            if self.key:
+                self.by = self.key
+            else:
+                raise Exception("Sorting key is not defined")
         else:
             self.by = by
         self.ascending = ascending
@@ -144,18 +157,12 @@ class SortNode(DataFrameNode):
 
     @property
     def sql_string(self) -> str:
-        if self.by == ["*"]:
-            cols = self.node.columns
-            assert isinstance(cols, TempVar)  # safe to say because of __init__
-            return (
-                f"{self.node.sql_string} ORDER BY {{', '.join({cols.var_name})}} {'ASC' if self.ascending else 'DESC'}"
-            )
         return f"{self.node.sql_string} ORDER BY {', '.join(self.by)} {'ASC' if self.ascending else 'DESC'}"
 
     @property
     def tempVars(self) -> list[TempVar]:
         tempVars = self.node.tempVars
-        if self.by == ["*"]:
+        if self.by == ["key"]:
             cols = self.node.columns
             if isinstance(cols, TempVar) and cols not in tempVars:
                 tempVars.append(cols)
@@ -168,6 +175,10 @@ class SortNode(DataFrameNode):
     @property
     def con(self) -> cst.Name:
         return self.node.con
+
+    @property
+    def key(self) -> list[str]:
+        return self.node.key
 
 
 class JoinNode(DataFrameNode):
@@ -200,6 +211,10 @@ class JoinNode(DataFrameNode):
             raise Exception("Join partners from different sources")
         else:
             return left_con
+
+    @property
+    def key(self) -> list[str]:
+        return self.left.key  # or self.right.key
 
     @property
     def columns(self) -> list[str] | TempVar:
@@ -252,7 +267,7 @@ class SetKeyNode(DataFrameNode):
         node.parent = self
 
         self.node = node
-        self.key = key
+        self._key = key
 
         super().__init__(*args, **kwargs)
 
@@ -263,6 +278,10 @@ class SetKeyNode(DataFrameNode):
     @property
     def tempVars(self) -> list[TempVar]:
         return self.node.tempVars
+
+    @property
+    def key(self) -> list[str]:
+        return self._key
 
     @property
     def columns(self) -> list[str] | TempVar:
@@ -304,6 +323,10 @@ class AggregationNode(DataFrameNode):
         if isinstance(cols, TempVar) and cols not in tempVars:
             tempVars.append(cols)
         return tempVars
+
+    @property
+    def key(self) -> list[str]:
+        return []
 
     @property
     def columns(self) -> list[str] | TempVar:

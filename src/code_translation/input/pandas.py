@@ -35,8 +35,8 @@ class PandasInput(InputModule):
 
     # df methods
 
-    def visit_df_sort_values(self, df_node: DataFrameNode, by, *, ascending=True, **kwargs):
-        return SortNode(df_node, make_list_of_str(by), ascending, **kwargs)
+    def visit_df_sort_values(self, df_node: DataFrameNode, by, *args, ascending=True, **kwargs):
+        return SortNode(df_node, make_list_of_str(by), ascending, *args, **kwargs)
 
     def visit_df_join(
         self,
@@ -59,7 +59,7 @@ class PandasInput(InputModule):
             df_node, other, how=how, left_on=_on, right_on=_on, lsuffix=lsuffix, rsuffix=rsuffix, validate=validate
         )
         if sort:
-            orderby = _on if isinstance(_on, list) else ["*"]  # TODO: Add key sorting ability
+            orderby = make_list_of_str(_on)  # could be key, which needs to be fetched with a prequery
             return SortNode(join_node, orderby)
         return join_node
 
