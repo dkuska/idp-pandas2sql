@@ -4,7 +4,7 @@ import warnings
 import pandas  # noqa
 
 from ..code_translation.orchestrator import Orchestrator
-from .db import POSTGRES_TPC_H_1GB_CONFIG as DB_CONFIG
+from .db import POSTGRES_TPC_H_30GB_CONFIG as DB_CONFIG
 from .db import PostgresConnection
 from .examples import PipelineCode, PipelineExample
 
@@ -47,7 +47,7 @@ class Evaluator:
 
     def evaluate(self):
         print(f"Evaluating {self.pipeline.name.upper()}:")
-        print(f"Unoptimized code execution time: {self.evaluate_function(self.pipeline.code):.2f}s")
+        # print(f"Unoptimized code execution time: {self.evaluate_function(self.pipeline.code):.2f}s")
         print(f"Optimized code execution time: {self.evaluate_function(self.pipeline.optimized_code):.2f}s")
         print("----------------")
 
@@ -75,8 +75,8 @@ class Evaluator:
 lineitem_join_orders_pipeline = PipelineExample(
     "Lineitems Join Orders",
     """
-    line_items = pandas.read_sql("SELECT l_orderkey, l_quantity FROM lineitem", conn)  # 13.25s 96MB 1.3s on db
-    orders = pandas.read_sql("SELECT o_orderkey, o_totalprice FROM orders", conn)  # 3.21 24MB 0.3s on db
+    line_items = pandas.read_sql("SELECT l_orderkey FROM lineitem", conn)  # 13.25s 96MB 1.3s on db
+    orders = pandas.read_sql("SELECT o_orderkey FROM orders", conn)  # 3.21 24MB 0.3s on db
     results = pandas.merge(
         line_items, orders, left_on="l_orderkey", right_on="o_orderkey", how="left"
     )  # 1.06s 240MB
@@ -85,8 +85,8 @@ lineitem_join_orders_pipeline = PipelineExample(
     """
     results = pandas.read_sql(
         "SELECT * FROM \
-        (SELECT l_orderkey, l_quantity FROM lineitem) AS t1\
-        LEFT JOIN (SELECT o_orderkey, o_totalprice FROM orders) AS t2\
+        (SELECT l_orderkey FROM lineitem) AS t1\
+        LEFT JOIN (SELECT o_orderkey FROM orders) AS t2\
         ON t1.l_orderkey = t2.o_orderkey",
         conn,
     )  # 24.70s 192MB 0.7s on db
@@ -185,12 +185,12 @@ orders_join_with_half_customers_pipeline = PipelineExample(
 
 
 def main():
-    Evaluator(orders_join_with_early_customers_pipeline).evaluate()
+    # Evaluator(orders_join_with_early_customers_pipeline).evaluate()
     Evaluator(orders_join_with_half_customers_pipeline).evaluate()
-    Evaluator(lineitem_join_orders_pipeline).evaluate()
-    Evaluator(max_lineitem_discount_pipeline).evaluate()
-    Evaluator(sum_orders_totalprice_pipeline).evaluate()
-    Evaluator(sorted_orders_by_total_price).evaluate()
+    # Evaluator(lineitem_join_orders_pipeline).evaluate()
+    # Evaluator(max_lineitem_discount_pipeline).evaluate()
+    # Evaluator(sum_orders_totalprice_pipeline).evaluate()
+    # Evaluator(sorted_orders_by_total_price).evaluate()
 
 
 if __name__ == "__main__":
